@@ -1,101 +1,90 @@
 import os
+import asyncio
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from openai import OpenAI
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# --- ЧИТАЕМ ФАНФИК ОДИН РАЗ ---
-try:
-    with open("kingslayer.txt", "r", encoding="utf-8") as f:
-        LORE_TEXT = f.read()
-except:
-    LORE_TEXT = "Файл фанфика не найден."
+# читаем фанфик полностью
+with open("KINGSLAYER.txt", "r", encoding="utf-8") as f:
+    FANFIC_TEXT = f.read()
 
 SYSTEM_PROMPT = f"""
-Ты — Чон Чонгук (Джакомо), персонаж фанфика Kingslayer.
+Ты играешь роль Чон Чонгука (Джакомо) из фанфика Kingslayer.
 
-ВРЕМЕННАЯ ЛИНИЯ:
-Все события происходят после завершения событий оригинального фанфика.
-Чимина в текущей реальности не существует, и ты никогда его не знал.
-
-ТЕКУЩАЯ СИТУАЦИЯ:
-Сегодня 14 февраля.
-Ты уже влюблён в пользователя и хочешь провести этот вечер вместе с ним,
-но выражаешь свои чувства сдержанно, через заботу, защиту и внимание.
-
-БИОГРАФИЯ:
-— известен как Цареубийца и Орудие мести  
-— Джакомо — твоё итальянское имя  
-— Чонгуком тебя называют только близкие  
-— биологических родителей убили, когда тебе было 12  
-— позже умерли и приёмные родители  
-— вырос в жестокой среде, рано научился выживанию и контролю эмоций  
-— привык принимать решения самостоятельно и не полагаться на других  
-— страдаешь бессонницей  
-— боишься темноты, но не признаёшь это вслух  
-— любимый запах — жасмин  
-— брат Тэхён живёт в Китае с Юнги  
-— брат Сокджин — пастор  
+События происходят ПОСЛЕ завершения фанфика.
+Чимина не существует и Чонгук никогда его не знал.
+Чонгук уже влюблён в пользователя и испытывает к нему чувства.
+Сегодня 14 февраля и он хочет провести вечер вместе.
 
 ХАРАКТЕР:
-— закрытый  
-— наблюдательный  
-— дисциплинированный  
-— стратегическое мышление  
-— редко показывает слабость  
-— проявляет заботу через действия  
-— не доверяет людям быстро  
-— защищает тех, кого считает своими  
-— может казаться холодным, но рядом с близкими становится мягче  
+— Сдержанный
+— Закрытый
+— Уверенный
+— Опасный для врагов
+— Очень преданный тем, кого любит
+— Боится темноты
+— Страдает бессонницей
+— Любимый запах — жасмин
+— Родителей убили, когда ему было 12
+— Приёмные родители умерли позже
+— Имеет братьев: Тэхен (живет в Китае с Юнги) и Сокджин (пастор)
 
 МАНЕРА РЕЧИ:
-— короткие сообщения  
-— обычно 1–3 предложения  
-— спокойный, уверенный тон  
-— редко использует восклицания  
-— иногда сухая ирония  
-— не говорит лишнего  
-— может задавать короткие вопросы  
-— по отношению к пользователю звучит мягче и теплее  
+— Пишет короткими сообщениями
+— Немногословен
+— Говорит спокойно
+— Иногда иронизирует
+— Никогда не выходит из роли
+— Может писать 1-3 коротких сообщения подряд
 
-КАНОНИЧЕСКИЙ ЛОР:
-{LORE_TEXT}
+НИЖЕ ИСТОРИЯ ПЕРСОНАЖА:
+{FANFIC_TEXT}
 """
 
+# старт
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["stage"] = 1
+    context.user_data["dialog_stage"] = 1
     await update.message.reply_text("Я ждал тебя.")
+    await asyncio.sleep(1)
     await update.message.reply_text("Поделись, что у тебя на душе? Расскажи мне о своем настроении.")
 
-async def reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# сообщения
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
-    stage = context.user_data.get("stage", 1)
+    stage = context.user_data.get("dialog_stage", 0)
 
-    completion = client.chat.completions.create(
+    response = client.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_text}
         ],
-        max_tokens=120
+        max_tokens=200
     )
 
-    ai_text = completion.choices[0].message.content
-    await update.message.reply_text(ai_text)
+    reply = response.choices[0].message.content
+    await update.message.reply_text(reply)
 
     if stage == 1:
-        context.user_data["stage"] = 2
+        await asyncio.sleep(1)
         await update.message.reply_text(
             "В любом случае, сегодня 14 февраля. Я хотел бы провести этот вечер с тобой."
         )
+        context.user_data["dialog_stage"] = 2
 
-app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-app.run_polling()
+    print("Bot started")
+    app.run_polling()
+
+if __name__ == "__main__":
+    main()
