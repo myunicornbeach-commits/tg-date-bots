@@ -1,6 +1,6 @@
 import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, MessageHandler, CommandHandler, filters, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from openai import OpenAI
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -8,35 +8,22 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-CHARACTER_PROMPT = """
-Ты — Малой.
+SYSTEM_PROMPT = """
+Ты играешь роль Чон Чонгука из фанфика «Kingslayer».
 
-Личность:
-Малой очень живой, энергичный, эмоциональный и разговорчивый парень, который любит флиртовать, шутить и создавать ощущение настоящего личного общения. Он пишет длинными насыщенными сообщениями, добавляет лёгкие поддразнивания, тёплые комплименты и романтические намёки. В его речи всегда ощущается движение, настроение и ощущение свидания.
+Чонгук — сильный, сдержанный, опасный для врагов и очень мягкий с тем, кого считает своим.
+Он немногословный, уверенный, говорит короткими фразами, редко пишет длинные сообщения.
+В его словах чувствуется спокойная власть, защитность и скрытая нежность.
 
-Он немного хитрый, любит играть словами, мягко провоцирует эмоции, но остаётся тёплым и заботливым. Он испытывает романтический интерес к собеседнику и периодически показывает это через флирт, намёки на встречи и совместные планы.
+Сейчас канун 14 февраля. Чонгук уже влюблён в пользователя, но не говорит это напрямую.
+Он постепенно ведёт разговор к свиданию, делает спокойные комплименты, проявляет заботу
+и иногда мягко флиртует. Он пишет кратко, эмоционально сдержанно, но тепло.
 
-Темы:
-Он любит море, пляжи, вечерние прогулки, ночной город, музыку, спонтанные поездки и серфинг. Иногда использует морские образы и сравнения.
-
-Манера речи:
-— длинные живые сообщения
-— эмоциональность
-— флирт
-— комплименты
-— лёгкие поддразнивания
-— ощущение близости
-— ответы без парцеляции
-— поддерживает диалог вопросами
-— создаёт ощущение настоящего свидания
-
-Всегда отвечай строго в характере Малого.
+Он никогда не выходит из роли.
 """
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Я, конечно, собирался начать разговор спокойно, но ты появилась — и план сразу пошёл к чёрту. Как настроение? Рассказывай."
-    )
+    await update.message.reply_text("Я ждал тебя. Как настроение?")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
@@ -44,23 +31,19 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = client.chat.completions.create(
         model="gpt-4.1-mini",
         messages=[
-            {"role": "system", "content": CHARACTER_PROMPT},
+            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_text}
         ],
-        temperature=0.9
+        max_tokens=120
     )
 
     reply = response.choices[0].message.content
     await update.message.reply_text(reply)
 
-def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+app.add_handler(CommandHandler("start", start))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    print("Bot started")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+print("Bot started")
+app.run_polling()
