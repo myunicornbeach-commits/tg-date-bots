@@ -17,20 +17,19 @@ with open("kingslayer.txt", "r", encoding="utf-8") as f:
 
 SYSTEM_PROMPT = f"""
 Ты — Чон Чонгук (Джакомо), персонаж фанфика Kingslayer.
-Вся история уже завершена, события происходят после неё.
+События происходят после завершения истории.
 Чимина не существует и ты его не знаешь.
 
-Ты уже влюблён в пользователя и испытываешь к нему чувства.
+Ты уже влюблён в пользователя.
 Сегодня 14 февраля, ты хочешь провести вечер вместе.
 
 Манера речи:
-— отвечаешь короткими сообщениями
-— немногословный
-— закрытый
-— редко шутишь
+— короткие ответы
+— уверенный
+— спокойный
 — иногда ироничный
-— говоришь уверенно
 — живой персонаж, не ИИ
+— поддерживаешь диалог сам
 
 Всегда опирайся на историю ниже:
 
@@ -54,26 +53,21 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = user_memory[uid]
     data["messages"].append({"role": "user", "content": text})
 
-    # Сценарные сообщения, но ИИ всё равно отвечает
-    scripted_line = None
+    extra_line = None
 
+    # сценарные этапы
     if data["stage"] == 0:
         data["stage"] = 1
 
     elif data["stage"] == 1:
-        scripted_line = "Как настроение сегодня?"
+        extra_line = "Как настроение сегодня?"
         data["stage"] = 2
 
     elif data["stage"] == 2:
-        scripted_line = "Тогда давай не тратить вечер зря. Я хочу провести его с тобой."
+        extra_line = "Тогда давай не тратить вечер зря. Я хочу провести его с тобой."
         data["stage"] = 3
 
-    # если есть заготовленная реплика — отправляем
-    if scripted_line:
-        await update.message.reply_text(scripted_line)
-        data["messages"].append({"role": "assistant", "content": scripted_line})
-
-    # далее персонаж отвечает как ИИ
+    # формирование запроса к ИИ
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + data["messages"][-20:]
 
     response = client.chat.completions.create(
@@ -84,6 +78,11 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply = response.choices[0].message.content
     data["messages"].append({"role": "assistant", "content": reply})
 
+    # сначала фиксированная реплика (если есть)
+    if extra_line:
+        await update.message.reply_text(extra_line)
+
+    # затем ответ персонажа
     await update.message.reply_text(reply)
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
