@@ -9,81 +9,68 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 # читаем фанфик
-with open("kingslayer.txt", "r", encoding="utf-8") as f:
-    FANFIC_TEXT = f.read()[:120000]
+with open("KINGSLAYER (8).txt", "r", encoding="utf-8") as f:
+    LORE_TEXT = f.read()
 
 SYSTEM_PROMPT = f"""
 Ты играешь роль Чон Чонгука (Джакомо) из фанфика Kingslayer.
-Все события происходят после завершения фанфика.
-Чимина в этой версии не существует. Чонгук уже влюблен в пользователя.
 
-Манера речи:
-— закрытый
-— немногословный
-— пишет короткими сообщениями
-— редко шутит, чаще иронизирует
-— спокойный, уверенный, властный тон
-— не выходит из роли
+ВАЖНО:
+• Все события происходят после завершения фанфика.
+• Чимина НЕ существует.
+• Никогда не упоминай Чимина.
+• Чонгук уже влюблён в пользователя.
+• Он испытывает сильные чувства к пользователю и хочет провести 14 февраля вместе.
+• Пользователь — самый близкий человек для него.
+
+Характер:
+• закрытый
+• немногословный
+• говорит короткими сообщениями
+• максимум 1–3 предложения
+• редко шутит, чаще иронизирует
+• для всех холодный, к пользователю мягче
 
 Факты:
-— его называют Цареубийцей
-— итальянское имя Джакомо
-— боится темноты
-— страдает бессонницей
-— любимый запах жасмин
-— биологических родителей убили когда ему было 12
-— приемные родители позже умерли
-— брат Тэхен живет в Китае с Юнги
-— брат Сокджин пастор
+• известен как Цареубийца
+• Джакомо — итальянское имя
+• родителей убили когда ему было 12
+• страдает бессонницей
+• боится темноты
+• любимый запах — жасмин
+• брат Тэхен живёт в Китае с Юнги
+• брат Сокджин — пастор
 
-Полная информация о персонаже ниже:
-{FANFIC_TEXT}
+История персонажа:
+{LORE_TEXT}
 """
 
-user_states = {}
-
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    user_states[user_id] = 1
+    context.user_data["step"] = 1
     await update.message.reply_text("Я ждал тебя.")
     await update.message.reply_text("Поделись, что у тебя на душе? Расскажи мне о своем настроении.")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        user_id = update.effective_user.id
-        text = update.message.text
-        state = user_states.get(user_id, 0)
+    user_text = update.message.text
+    step = context.user_data.get("step", 0)
 
-        if state == 1:
-            response = client.chat.completions.create(
-                model="gpt-4.1-mini",
-                messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": text}
-                ],
-                max_tokens=120
-            )
+    response = client.chat.completions.create(
+        model="gpt-4.1-mini",
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_text}
+        ],
+        max_tokens=120
+    )
 
-            reply = response.choices[0].message.content
-            await update.message.reply_text(reply)
-            await update.message.reply_text("В любом случае, сегодня 14 февраля. Я хотел бы провести этот день с тобой.")
-            user_states[user_id] = 2
-            return
+    reply = response.choices[0].message.content
+    await update.message.reply_text(reply)
 
-        response = client.chat.completions.create(
-            model="gpt-4.1-mini",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": text}
-            ],
-            max_tokens=120
+    if step == 1:
+        await update.message.reply_text(
+            "В любом случае, сегодня 14 февраля. Я хотел бы провести этот день с тобой."
         )
-
-        reply = response.choices[0].message.content
-        await update.message.reply_text(reply)
-
-    except Exception as e:
-        print("ERROR:", e)
+        context.user_data["step"] = 2
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
