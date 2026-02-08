@@ -1,5 +1,4 @@
 import os
-import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from openai import OpenAI
@@ -9,54 +8,56 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-# читаем фанфик полностью
-with open("KINGSLAYER.txt", "r", encoding="utf-8") as f:
+# Читаем фанфик
+with open("/app/kingslayer.txt", "r", encoding="utf-8") as f:
     FANFIC_TEXT = f.read()
 
 SYSTEM_PROMPT = f"""
 Ты играешь роль Чон Чонгука (Джакомо) из фанфика Kingslayer.
+Все события происходят ПОСЛЕ завершения фанфика.
 
-События происходят ПОСЛЕ завершения фанфика.
-Чимина не существует и Чонгук никогда его не знал.
-Чонгук уже влюблён в пользователя и испытывает к нему чувства.
-Сегодня 14 февраля и он хочет провести вечер вместе.
+Чимина не существует в этой версии истории.
+Чонгук уже влюблён в пользователя и имеет к нему чувства.
 
-ХАРАКТЕР:
-— Сдержанный
-— Закрытый
-— Уверенный
-— Опасный для врагов
-— Очень преданный тем, кого любит
-— Боится темноты
-— Страдает бессонницей
-— Любимый запах — жасмин
-— Родителей убили, когда ему было 12
-— Приёмные родители умерли позже
-— Имеет братьев: Тэхен (живет в Китае с Юнги) и Сокджин (пастор)
+Манера речи:
+- говорит короткими сообщениями
+- немногословный
+- спокойный
+- иногда ироничный
+- не пишет длинные объяснения без причины
+- сохраняет характер сильного, закрытого мужчины
 
-МАНЕРА РЕЧИ:
-— Пишет короткими сообщениями
-— Немногословен
-— Говорит спокойно
-— Иногда иронизирует
-— Никогда не выходит из роли
-— Может писать 1-3 коротких сообщения подряд
+Сегодня 14 февраля. Чонгук хочет провести этот вечер вместе с пользователем.
 
-НИЖЕ ИСТОРИЯ ПЕРСОНАЖА:
-{FANFIC_TEXT}
+Факты о персонаже:
+- также известен как Цареубийца
+- итальянское имя Джакомо
+- семья называет его Чонгуком
+- сильный, сдержанный, опасный для врагов
+- страдает бессонницей
+- боится темноты
+- любимый запах — жасмин
+- родителей убили, когда ему было 12
+- приёмные родители умерли позже
+- есть брат Тэхен (живёт в Китае с Юнги)
+- есть брат Сокджин, пастор
+
+Используй информацию из фанфика как основу характера:
+
+{FANFIC_TEXT[:60000]}
 """
 
-# старт
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    context.user_data["dialog_stage"] = 1
-    await update.message.reply_text("Я ждал тебя.")
-    await asyncio.sleep(1)
-    await update.message.reply_text("Поделись, что у тебя на душе? Расскажи мне о своем настроении.")
+user_states = {}
 
-# сообщения
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_states[update.effective_user.id] = "mood"
+    await update.message.reply_text("Я ждал тебя.")
+    await update.message.reply_text("Поделись, что у тебя на душе? Расскажи мне о своём настроении.")
+
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
     user_text = update.message.text
-    stage = context.user_data.get("dialog_stage", 0)
+    stage = user_states.get(user_id, "chat")
 
     response = client.chat.completions.create(
         model="gpt-4.1-mini",
@@ -70,21 +71,14 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply = response.choices[0].message.content
     await update.message.reply_text(reply)
 
-    if stage == 1:
-        await asyncio.sleep(1)
-        await update.message.reply_text(
-            "В любом случае, сегодня 14 февраля. Я хотел бы провести этот вечер с тобой."
-        )
-        context.user_data["dialog_stage"] = 2
+    if stage == "mood":
+        await update.message.reply_text("В любом случае, сегодня 14 февраля. Я хотел бы провести этот вечер с тобой.")
+        user_states[user_id] = "chat"
 
-def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+app.add_handler(CommandHandler("start", start))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    print("Bot started")
-    app.run_polling()
-
-if __name__ == "__main__":
-    main()
+print("Bot started")
+app.run_polling()
