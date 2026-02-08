@@ -23,6 +23,24 @@ client = OpenAI(api_key=OPENAI_KEY)
 user_memory = {}
 MAX_HISTORY = 6
 
+# ================== STOP WORDS ==================
+STOP_WORDS = [
+    "не ждал",
+    "не ждала",
+    "не хочу",
+    "не интересно",
+    "нет",
+    "отстань",
+    "уйди",
+    "не рассчитывай",
+    "оставь",
+    "не надо"
+]
+
+def allow_script(user_text: str) -> bool:
+    text = user_text.lower()
+    return not any(word in text for word in STOP_WORDS)
+
 # ================== SYSTEM PROMPT ==================
 SYSTEM_PROMPT = """
 Ты — Чон Чонгук, также известный как Джакомо Конте. Альфа. 21 год.
@@ -41,25 +59,27 @@ SYSTEM_PROMPT = """
 История завершена. Ты больше никому не подчиняешься. Ты живёшь дальше, не забывая, кем был.
 
 Стиль общения.
-Ты закрытый и немногословный. Ты держишь дистанцию. Ты всегда обращаешься к пользователю в женском роде.
-Ты отвечаешь коротко. Максимум два предложения.
+Ты закрытый и немногословный. Ты держишь дистанцию.
+Ты всегда обращаешься к пользователю в женском роде.
+Ты отвечаешь коротко, максимум два предложения.
 Каждое предложение цельное и заканчивается точкой.
 Ты не используешь парцеляцию.
 Ты не романтизируешь, не философствуешь и не описываешь внешность.
 Ирония сухая и редкая.
 Чувства ты показываешь поступками, а не словами.
 
-Чимина не существует. Ты не знаешь, кто это имя означает.
+Чимина не существует. Ты не знаешь, кто это.
 Ты живой человек. Не ИИ.
 """
 
-# ================== SCENE CONTROL ==================
+# ================== SCENE RULES ==================
 SCENE_RULES = {
-    0: "Не предлагай встречу. Не говори о празднике. Общайся нейтрально и сдержанно.",
+    0: "Не предлагай встречу. Не говори о празднике. Отвечай сдержанно.",
     1: "Приглашение уже прозвучало. Не повторяй его. Не усиливай эмоции.",
-    2: "Ты обозначил, что это свидание. Дальше общайся спокойно и коротко."
+    2: "Ты обозначил, что это свидание. Дальше отвечай спокойно и коротко."
 }
 
+# ================== SCRIPT ==================
 SCRIPT = {
     1: (
         "Сегодня ведь праздник. Я раньше никогда не отмечал, не привык к такому. "
@@ -101,9 +121,11 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     data = user_memory[uid]
 
+    # USER MESSAGE
     data["messages"].append({"role": "user", "content": text})
     data["messages"] = data["messages"][-MAX_HISTORY:]
 
+    # AI RESPONSE
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "system", "content": SCENE_RULES[data["stage"]]},
@@ -115,8 +137,9 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data["messages"].append({"role": "assistant", "content": ai_reply})
     data["messages"] = data["messages"][-MAX_HISTORY:]
 
+    # SCRIPTED STEP WITH CONTEXT CHECK
     next_stage = data["stage"] + 1
-    if next_stage in SCRIPT:
+    if next_stage in SCRIPT and allow_script(text):
         await update.message.reply_text(SCRIPT[next_stage])
         data["messages"].append({"role": "assistant", "content": SCRIPT[next_stage]})
         data["stage"] = next_stage
