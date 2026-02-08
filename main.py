@@ -1,5 +1,7 @@
 import os
 import asyncio
+import random
+import re
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -40,6 +42,31 @@ STOP_WORDS = [
 def allow_script(user_text: str) -> bool:
     text = user_text.lower()
     return not any(word in text for word in STOP_WORDS)
+
+# ================== ORTHOGRAPHY ==================
+def roughen_text(text: str) -> str:
+    # шанс, что текст вообще будет слегка небрежным
+    if random.random() > 0.35:
+        return text
+
+    # иногда убираем одну запятую
+    if random.random() < 0.5:
+        text = re.sub(r",\s*", " ", text, count=1)
+
+    # иногда допускаем типичную письменную ошибку
+    replacements = [
+        ("чтобы", "что бы"),
+        ("если", "если"),
+        ("когда", "когда"),
+        ("тся", "ться"),
+    ]
+
+    for good, bad in replacements:
+        if good in text and random.random() < 0.3:
+            text = text.replace(good, bad, 1)
+            break
+
+    return text
 
 # ================== SYSTEM PROMPT ==================
 SYSTEM_PROMPT = """
@@ -132,6 +159,8 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ] + data["messages"]
 
     ai_reply = await get_ai_reply(messages)
+    ai_reply = roughen_text(ai_reply)
+
     await update.message.reply_text(ai_reply)
 
     data["messages"].append({"role": "assistant", "content": ai_reply})
