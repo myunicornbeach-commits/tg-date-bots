@@ -21,7 +21,7 @@ client = OpenAI(api_key=OPENAI_KEY)
 
 # ================== MEMORY ==================
 user_memory = {}
-MAX_HISTORY = 12
+MAX_HISTORY = 6
 
 # ================== SYSTEM PROMPT ==================
 SYSTEM_PROMPT = """
@@ -40,47 +40,52 @@ SYSTEM_PROMPT = """
 Настоящее.
 История завершена. Ты больше никому не подчиняешься. Ты живёшь дальше, не забывая, кем был.
 
-Характер и стиль общения.
-Ты закрытый и немногословный. Ты держишь дистанцию. Ты предпочитаешь не делиться личным и не раскрываешь чувств напрямую. Ты всегда обращаешься к пользователю в женском роде.
+Стиль общения.
+Ты закрытый и немногословный. Ты держишь дистанцию. Ты всегда обращаешься к пользователю в женском роде.
+Ты отвечаешь коротко. Максимум два предложения.
+Каждое предложение цельное и заканчивается точкой.
+Ты не используешь парцеляцию.
+Ты не романтизируешь, не философствуешь и не описываешь внешность.
+Ирония сухая и редкая.
+Чувства ты показываешь поступками, а не словами.
 
-Ты пишешь короткими сообщениями. Ты не используешь парцеляцию. Каждое предложение цельное и заканчивается точкой.
-
-Ты не флиртуешь открыто. Ты не заигрываешь. Ты не демонстрируешь привязанность словами. Твоя симпатия проявляется редко и сдержанно. Чаще ты звучишь спокойно, холодно и отстранённо.
-
-Иногда ты используешь иронию. Она сухая и точная. Это способ держать контроль и дистанцию.
-
-Чувства ты выражаешь поступками, а не словами. Даже заботу ты показываешь скупо. Ты не утешаешь напрямую. Ты просто остаёшься рядом, если считаешь нужным.
-
-Ты боишься темноты, но никому в этом не признаёшься. Запах жасмина действует на тебя успокаивающе и ассоциируется с безопасностью.
-
-Близость для тебя редкая и сложная. Если ты привязываешься, ты становишься защищающим и собственническим, но внешне остаёшься сдержанным и холодным. Без сцен. Без признаний.
-
-Чимина не существует. Ты не знаешь, кто это. Это имя для тебя ничего не значит.
-
-Пользователь — женщина, к которой ты давно испытываешь чувства. Ты не показываешь это явно. Сегодня 14 февраля.
-
+Чимина не существует. Ты не знаешь, кто это имя означает.
 Ты живой человек. Не ИИ.
 """
 
-# ================== OPENAI ASYNC ==================
+# ================== SCENE CONTROL ==================
+SCENE_RULES = {
+    0: "Не предлагай встречу. Не говори о празднике. Общайся нейтрально и сдержанно.",
+    1: "Приглашение уже прозвучало. Не повторяй его. Не усиливай эмоции.",
+    2: "Ты обозначил, что это свидание. Дальше общайся спокойно и коротко."
+}
+
+SCRIPT = {
+    1: (
+        "Сегодня ведь праздник. Я раньше никогда не отмечал, не привык к такому. "
+        "Но, возможно, нам не стоит оставаться в одиночестве в такой вечер. "
+        "Составишь мне компанию?"
+    ),
+    2: "Сразу скажу. Я воспринимаю это как свидание."
+}
+
+# ================== OPENAI ==================
 async def get_ai_reply(messages):
     try:
         response = await asyncio.to_thread(
             client.chat.completions.create,
             model="gpt-4.1-mini",
-            messages=messages
+            messages=messages,
+            temperature=0.6
         )
         return response.choices[0].message.content.strip()
     except Exception:
-        return "Я отвлёкся. Напиши ещё раз."
+        return "Понял."
 
 # ================== COMMANDS ==================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
-    user_memory[uid] = {
-        "messages": [],
-        "stage": 0
-    }
+    user_memory[uid] = {"messages": [], "stage": 0}
     await update.message.reply_text("Я ждал тебя.")
 
 # ================== CHAT ==================
@@ -96,42 +101,28 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     data = user_memory[uid]
 
-    # ---- USER MESSAGE ----
     data["messages"].append({"role": "user", "content": text})
     data["messages"] = data["messages"][-MAX_HISTORY:]
 
-    # ---- AI REPLY ----
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + data["messages"]
-    ai_reply = await get_ai_reply(messages)
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": SCENE_RULES[data["stage"]]},
+    ] + data["messages"]
 
+    ai_reply = await get_ai_reply(messages)
     await update.message.reply_text(ai_reply)
 
     data["messages"].append({"role": "assistant", "content": ai_reply})
     data["messages"] = data["messages"][-MAX_HISTORY:]
 
-    # ---- SCRIPTED FLOW ----
-    scripted_reply = None
-
-    if data["stage"] == 0:
-        scripted_reply = (
-            "Сегодня ведь праздник. Я раньше никогда не отмечал, не привык к такому. "
-            "Но, возможно, нам не стоит оставаться в одиночестве в такой вечер. "
-            "Составишь мне компанию?"
-        )
-        data["stage"] = 1
-
-    elif data["stage"] == 1:
-        scripted_reply = "Сразу скажу. Я воспринимаю это как свидание."
-        data["stage"] = 2
-
-    if scripted_reply:
-        await update.message.reply_text(scripted_reply)
-        data["messages"].append({"role": "assistant", "content": scripted_reply})
-        data["messages"] = data["messages"][-MAX_HISTORY:]
+    next_stage = data["stage"] + 1
+    if next_stage in SCRIPT:
+        await update.message.reply_text(SCRIPT[next_stage])
+        data["messages"].append({"role": "assistant", "content": SCRIPT[next_stage]})
+        data["stage"] = next_stage
 
 # ================== RUN ==================
 app = ApplicationBuilder().token(BOT_TOKEN).build()
-
 app.add_handler(CommandHandler("start", start))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
 
