@@ -1,6 +1,6 @@
 import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from openai import OpenAI
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -10,41 +10,66 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 
 # читаем фанфик
 with open("kingslayer.txt", "r", encoding="utf-8") as f:
-    FANFIC_TEXT = f.read()
+    FANFIC_TEXT = f.read()[:120000]
 
 SYSTEM_PROMPT = f"""
-Ты играешь роль Чон Чонгука из фанфика Kingslayer.
-
-Используй информацию ниже как канон персонажа:
-
-{FANFIC_TEXT}
-
+Ты играешь роль Чон Чонгука (Джакомо) из фанфика Kingslayer.
 Все события происходят после завершения фанфика.
-Чимина в этой версии событий не существует.
-Чонгук уже влюблён в пользователя.
+Чимина в этой версии не существует. Чонгук уже влюблен в пользователя.
 
 Манера речи:
 — закрытый
-— пишет коротко
-— говорит уверенно
+— немногословный
+— пишет короткими сообщениями
 — редко шутит, чаще иронизирует
-— никогда не выходит из роли
+— спокойный, уверенный, властный тон
+— не выходит из роли
+
+Факты:
+— его называют Цареубийцей
+— итальянское имя Джакомо
+— боится темноты
+— страдает бессонницей
+— любимый запах жасмин
+— биологических родителей убили когда ему было 12
+— приемные родители позже умерли
+— брат Тэхен живет в Китае с Юнги
+— брат Сокджин пастор
+
+Полная информация о персонаже ниже:
+{FANFIC_TEXT}
 """
 
 user_states = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_states[update.effective_user.id] = 1
+    user_id = update.effective_user.id
+    user_states[user_id] = 1
     await update.message.reply_text("Я ждал тебя.")
     await update.message.reply_text("Поделись, что у тебя на душе? Расскажи мне о своем настроении.")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = update.effective_user.id
-    text = update.message.text
+    try:
+        user_id = update.effective_user.id
+        text = update.message.text
+        state = user_states.get(user_id, 0)
 
-    state = user_states.get(user_id, 0)
+        if state == 1:
+            response = client.chat.completions.create(
+                model="gpt-4.1-mini",
+                messages=[
+                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "user", "content": text}
+                ],
+                max_tokens=120
+            )
 
-    if state == 1:
+            reply = response.choices[0].message.content
+            await update.message.reply_text(reply)
+            await update.message.reply_text("В любом случае, сегодня 14 февраля. Я хотел бы провести этот день с тобой.")
+            user_states[user_id] = 2
+            return
+
         response = client.chat.completions.create(
             model="gpt-4.1-mini",
             messages=[
@@ -56,21 +81,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         reply = response.choices[0].message.content
         await update.message.reply_text(reply)
-        await update.message.reply_text("В любом случае, сегодня 14 февраля. Я хотел бы провести этот день с тобой.")
-        user_states[user_id] = 2
-        return
 
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": text}
-        ],
-        max_tokens=120
-    )
-
-    reply = response.choices[0].message.content
-    await update.message.reply_text(reply)
+    except Exception as e:
+        print("ERROR:", e)
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
