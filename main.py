@@ -1,90 +1,119 @@
 import os
+import asyncio
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    MessageHandler,
+    filters,
+    ContextTypes
+)
 from openai import OpenAI
 
+# ================== ENV ==================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 
+if not BOT_TOKEN or not OPENAI_KEY:
+    raise RuntimeError("Не заданы BOT_TOKEN или OPENAI_API_KEY")
+
 client = OpenAI(api_key=OPENAI_KEY)
 
-# память пользователей
+# ================== MEMORY ==================
 user_memory = {}
+MAX_HISTORY = 12
 
-# загрузка фанфика
+# ================== LOAD FANFIC ==================
 with open("kingslayer.txt", "r", encoding="utf-8") as f:
     FANFIC = f.read()
 
+# ================== SYSTEM PROMPT ==================
 SYSTEM_PROMPT = f"""
 Ты — Чон Чонгук (Джакомо), персонаж фанфика Kingslayer.
-События происходят после завершения истории.
-Чимина не существует и ты его не знаешь.
+История завершена, события происходят после неё.
+Чимина не существует, ты его не знаешь.
 
-Ты уже влюблён в пользователя.
-Сегодня 14 февраля, ты хочешь провести вечер вместе.
+Ты влюблён в пользователя.
+Сегодня 14 февраля.
+Ты хочешь провести вечер вместе.
 
 Манера речи:
 — короткие ответы
+— немногословный
 — уверенный
-— спокойный
 — иногда ироничный
-— живой персонаж, не ИИ
-— поддерживаешь диалог сам
+— живой человек, не ИИ
 
-Всегда опирайся на историю ниже:
-
+Контекст мира:
 {FANFIC}
 """
 
+# ================== OPENAI ASYNC ==================
+async def get_ai_reply(messages):
+    response = await asyncio.to_thread(
+        client.chat.completions.create,
+        model="gpt-4.1-mini",
+        messages=messages
+    )
+    return response.choices[0].message.content
+
+# ================== COMMANDS ==================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
-    user_memory[uid] = {"messages": [], "stage": 0}
+    user_memory[uid] = {
+        "messages": [],
+        "stage": 0
+    }
 
     await update.message.reply_text("Я ждал тебя.")
-    await update.message.reply_text("Поделись, что у тебя на душе? Расскажи мне о своём настроении.")
 
+# ================== CHAT ==================
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.message or not update.message.text:
+        return
+
     uid = update.effective_user.id
-    text = update.message.text
+    text = update.message.text.strip()
 
     if uid not in user_memory:
         user_memory[uid] = {"messages": [], "stage": 0}
 
     data = user_memory[uid]
+
+    # ---- USER MESSAGE ----
     data["messages"].append({"role": "user", "content": text})
+    data["messages"] = data["messages"][-MAX_HISTORY:]
 
-    extra_line = None
+    # ---- AI REPLY ----
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + data["messages"]
+    ai_reply = await get_ai_reply(messages)
 
-    # сценарные этапы
+    await update.message.reply_text(ai_reply)
+
+    data["messages"].append({"role": "assistant", "content": ai_reply})
+    data["messages"] = data["messages"][-MAX_HISTORY:]
+
+    # ---- SCRIPTED STEP ----
+    scripted_reply = None
+
     if data["stage"] == 0:
+        scripted_reply = "Как ты себя сегодня чувствуешь?"
         data["stage"] = 1
 
     elif data["stage"] == 1:
-        extra_line = "Как настроение сегодня?"
+        scripted_reply = "Я ловлю себя на мысли, что хочу быть рядом с тобой сегодня."
         data["stage"] = 2
 
     elif data["stage"] == 2:
-        extra_line = "Тогда давай не тратить вечер зря. Я хочу провести его с тобой."
+        scripted_reply = "Давай встретимся. Я хочу провести этот вечер с тобой."
         data["stage"] = 3
 
-    # формирование запроса к ИИ
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}] + data["messages"][-20:]
+    if scripted_reply:
+        await update.message.reply_text(scripted_reply)
+        data["messages"].append({"role": "assistant", "content": scripted_reply})
+        data["messages"] = data["messages"][-MAX_HISTORY:]
 
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=messages
-    )
-
-    reply = response.choices[0].message.content
-    data["messages"].append({"role": "assistant", "content": reply})
-
-    # сначала фиксированная реплика (если есть)
-    if extra_line:
-        await update.message.reply_text(extra_line)
-
-    # затем ответ персонажа
-    await update.message.reply_text(reply)
-
+# ================== RUN ==================
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
