@@ -54,19 +54,26 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = user_memory[uid]
     data["messages"].append({"role": "user", "content": text})
 
-    # этап вопроса о настроении
+    # Сценарные сообщения, но ИИ всё равно отвечает
+    scripted_line = None
+
     if data["stage"] == 0:
         data["stage"] = 1
 
     elif data["stage"] == 1:
-        await update.message.reply_text("Как настроение сегодня?")
+        scripted_line = "Как настроение сегодня?"
         data["stage"] = 2
-        return
 
     elif data["stage"] == 2:
-        await update.message.reply_text("Тогда давай не тратить вечер зря. Я хочу провести его с тобой.")
+        scripted_line = "Тогда давай не тратить вечер зря. Я хочу провести его с тобой."
         data["stage"] = 3
 
+    # если есть заготовленная реплика — отправляем
+    if scripted_line:
+        await update.message.reply_text(scripted_line)
+        data["messages"].append({"role": "assistant", "content": scripted_line})
+
+    # далее персонаж отвечает как ИИ
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + data["messages"][-20:]
 
     response = client.chat.completions.create(
@@ -75,7 +82,6 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
     reply = response.choices[0].message.content
-
     data["messages"].append({"role": "assistant", "content": reply})
 
     await update.message.reply_text(reply)
