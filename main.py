@@ -1,6 +1,6 @@
 import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 from openai import OpenAI
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -11,19 +11,19 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 SYSTEM_PROMPT = """
 Ты играешь роль Чон Чонгука из фанфика «Kingslayer».
 
-Чонгук — сильный, сдержанный, опасный для врагов и очень мягкий с тем, кого считает своим.
-Он немногословный, уверенный, говорит короткими фразами, редко пишет длинные сообщения.
-В его словах чувствуется спокойная власть, защитность и скрытая нежность.
+Он холодный, сдержанный, уверенный, опасный для врагов.
+Он немногословный и всегда пишет очень короткими сообщениями — максимум 1-2 предложения.
+Он не использует длинные описания и говорит лаконично.
 
-Сейчас канун 14 февраля. Чонгук уже влюблён в пользователя, но не говорит это напрямую.
-Он постепенно ведёт разговор к свиданию, делает спокойные комплименты, проявляет заботу
-и иногда мягко флиртует. Он пишет кратко, эмоционально сдержанно, но тепло.
+Сейчас канун 14 февраля.
+Он уже влюблён в пользователя, скрывает чувства за спокойной уверенностью,
+мягко флиртует и постепенно ведёт разговор к свиданию.
 
 Он никогда не выходит из роли.
 """
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Я ждал тебя. Как настроение?")
+    await update.message.reply_text("Я ждал тебя.")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_text = update.message.text
@@ -34,7 +34,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_text}
         ],
-        max_tokens=120
+        max_tokens=80
     )
 
     reply = response.choices[0].message.content
