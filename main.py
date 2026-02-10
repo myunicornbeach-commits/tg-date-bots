@@ -190,43 +190,48 @@ async def play_scene(update: Update):
     uid = update.effective_user.id
     data = user_memory[uid]
 
-    scene = SCENES[data["scene"]]
-    step = data["step"]
+    while True:
+        scene = SCENES[data["scene"]]
+        step = data["step"]
 
-    if step >= len(scene):
-        return
+        if step >= len(scene):
+            return
 
-    node = scene[step]
-    await send_node(update, node)
+        node = scene[step]
+        await send_node(update, node)
 
-    message = update.message or update.callback_query.message
+        message = update.message or update.callback_query.message
 
-    if "choices" in node:
-        keyboard = [
-            [InlineKeyboardButton(v["label"], callback_data=k)]
-            for k, v in node["choices"].items()
-        ]
-        await message.reply_text(
-            "Выбери.",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-        return
+        # Если есть выбор — ждём пользователя
+        if "choices" in node:
+            keyboard = [
+                [InlineKeyboardButton(v["label"], callback_data=k)]
+                for k, v in node["choices"].items()
+            ]
+            await message.reply_text(
+                "Выбери.",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return
 
-    if node.get("next_button"):
-        keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
-        await message.reply_text(
-            " ",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-        return
+        # Если есть кнопка «Дальше» — ждём пользователя
+        if node.get("next_button"):
+            keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
+            await message.reply_text(
+                " ",
+                reply_markup=InlineKeyboardMarkup(keyboard)
+            )
+            return
 
-    data["step"] += 1
+        # Иначе — это обычный текст, идём дальше автоматически
+        data["step"] += 1
 
-    if "next_scene" in node:
-        data["scene"] = node["next_scene"]
-        data["step"] = 0
-        if data["scene"] == "FREE_CHAT":
-            data["mode"] = "FREE_CHAT"
+        if "next_scene" in node:
+            data["scene"] = node["next_scene"]
+            data["step"] = 0
+            if data["scene"] == "FREE_CHAT":
+                data["mode"] = "FREE_CHAT"
+                return
 
 # ================== HANDLERS ==================
 
