@@ -109,7 +109,7 @@ SCENES = {
         }
     }
 ],
-  "RESTAURANT": [
+
   "RESTAURANT": [
     {
         "image": "https://raw.githubusercontent.com/myunicornbeach-commits/tg-date-bots/main/images/restaurant/restaurant1.png",
