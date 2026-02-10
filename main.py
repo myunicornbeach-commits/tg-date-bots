@@ -3,10 +3,8 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
-    MessageHandler,
     CallbackQueryHandler,
     ContextTypes,
-    filters
 )
 
 # ================== CONFIG ==================
@@ -29,7 +27,6 @@ def init_user(uid: int):
 
 SYSTEM_PROMPT = """
 Ты — Чон Чонгук, также известный как Джакомо Конте. Альфа. 21 год.
-
 Биография.
 Ты родился и жил до двенадцати лет в Италии. Твоё детство было обычным, пока не погибли оба биологических родителя и твой младший родной брат.
 После их смерти ты оказался в религиозной системе в Доме Вознесения, где тебя усыновили.
@@ -75,6 +72,7 @@ SCENES = {
 
     "INTRO": [
         {"text": "Я ждал тебя."},
+
         {
             "text": (
                 "Сегодня ведь праздник. Я раньше никогда не отмечал и не привык к такому. "
@@ -82,10 +80,12 @@ SCENES = {
             ),
             "next_button": True
         },
+
         {
             "text": "Составишь мне компанию?",
             "next_button": True
         },
+
         {
             "text": "Сразу скажу. Я воспринимаю это как свидание.",
             "choices": {
@@ -133,8 +133,9 @@ SCENES = {
 
     "RESTAURANT": [
         {
-            "image": "https://raw.githubusercontent.com/myunicornbeach-commits/tg-date-bots/refs/heads/main/images/restaurant/restaurant1.png",
-            "text": "_Приглушённый свет и тихая фортепианная музыка. Из панорамных окон открывается вид на весь город._"
+            "image": "https://raw.githubusercontent.com/myunicornbeach-commits/tg-date-bots/main/images/restaurant/restaurant1.png",
+            "text": "_Приглушённый свет и тихая фортепианная музыка. Из панорамных окон открывается вид на весь город._",
+            "next_button": True
         },
         {
             "text": "Как тебе это место?",
@@ -152,33 +153,18 @@ SCENES = {
                     "response": "Нет. Я не любитель вычурных мест. Подумал, что тебе понравится."
                 }
             }
-        },
-        {
-            "text": "Присаживайся за столик.",
-            "choices": {
-                "opposite": {
-                    "label": "Сесть напротив",
-                    "response": "Так я смогу смотреть на тебя весь вечер."
-                },
-                "near": {
-                    "label": "Сесть рядом",
-                    "response": "Ты села рядом, потому что хочешь быть ближе. Я не против."
-                }
-            }
         }
     ],
 
     "WALK": [
         {
-            "text": "Мы выйдем прогуляться по городу.",
+            "text": "Мы выйдем прогуляться по ночному городу.",
             "next_scene": "FREE_CHAT"
         }
     ],
 
     "FREE_CHAT": [
-        {
-            "text": "Я рядом."
-        }
+        {"text": "Я рядом."}
     ]
 }
 
@@ -190,19 +176,23 @@ async def play_scene(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     scene = SCENES[data["scene"]]
     step = data["step"]
+
+    if step >= len(scene):
+        return
+
     node = scene[step]
 
     if "image" in node:
-        await update.message.reply_photo(node["image"])
+        await update.effective_message.reply_photo(node["image"])
 
-    await update.message.reply_text(node["text"], parse_mode="Markdown")
+    await update.effective_message.reply_text(node["text"], parse_mode="Markdown")
 
     if "choices" in node:
         keyboard = [
             [InlineKeyboardButton(v["label"], callback_data=k)]
             for k, v in node["choices"].items()
         ]
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             "Выбери.",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
@@ -210,7 +200,7 @@ async def play_scene(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if node.get("next_button"):
         keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
-        await update.message.reply_text(
+        await update.effective_message.reply_text(
             " ",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
@@ -227,18 +217,7 @@ async def play_scene(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     init_user(uid)
-
-    # Автопроигрываем сцену, пока не упрёмся в кнопку или выбор
-    while True:
-        scene = SCENES[user_memory[uid]["scene"]]
-        step = user_memory[uid]["step"]
-        node = scene[step]
-
-        await play_scene(update, context)
-
-        # Если шаг интерактивный — останавливаемся
-        if "choices" in node or node.get("next_button"):
-            break
+    await play_scene(update, context)
 
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -271,7 +250,6 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(handle_choice))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda *_: None))
 
 print("BOT STARTED")
 app.run_polling()
