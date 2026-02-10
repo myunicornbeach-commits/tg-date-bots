@@ -218,46 +218,48 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     uid = query.from_user.id
+
+    # 🔹 Проверяем, есть ли пользователь в памяти
+    if uid not in user_memory:
+        init_user(uid)
+        await query.message.reply_text("Бот был перезапущен — начнём заново 🙂")
+        await play_scene(update)
+        return
+
     data = user_memory[uid]
 
-    # ──────────────── КНОПКА "ДАЛЬШЕ"
+    # ─────────── КНОПКА "ДАЛЬШЕ"
     if query.data == "next":
         data["step"] += 1
-        # если шаг превысил количество узлов — стоп
         scene = SCENES[data["scene"]]
         if data["step"] >= len(scene):
             await query.message.reply_text("На этом всё для этой сцены.")
             return
-        # перейти к следующему узлу
         await play_scene(update)
         return
 
-    # ──────────────── ОБРАБОТКА ВЫБОРА
+    # ─────────── ОБРАБОТКА ВЫБОРА
     scene = SCENES[data["scene"]]
     step = data["step"]
     node = scene[step]
 
-    # если текущий узел не содержит "choices" — пропускаем
     if "choices" not in node:
         await query.message.reply_text("Ошибка: вариантов выбора нет.")
         return
 
     choice = node["choices"][query.data]
 
-    # текст ответа
     if "response" in choice:
         await query.message.reply_text(choice["response"])
 
-    # переход в следующую сцену
     if "next_scene" in choice:
         data["scene"] = choice["next_scene"]
         data["step"] = 0
         await play_scene(update)
-
 
     
 async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
