@@ -111,7 +111,7 @@ SCENES = {
 
     "RESTAURANT": [
         {
-            "image": "https://i.ibb.co/wNDCwqVX/Picsart-26-02-10-16-02-19-386.png",
+            "image": "https://i.postimg.cc/0jBXWkz3/Picsart-26-02-10-16-02-19-386.png",
             "text": "_Приглушённый свет, тихая музыка и вид на ночной город._"
         },
         {
