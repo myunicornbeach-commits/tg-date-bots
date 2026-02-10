@@ -180,13 +180,17 @@ SCENES = {
 # ================== ENGINE ==================
 
 async def send_node(update: Update, node: dict):
-    message = update.message or update.callback_query.message
+    if update.callback_query:
+        message = update.callback_query.message
+    else:
+        message = update.message
 
     if "image" in node:
         await message.reply_photo(node["image"])
 
     await message.reply_text(node["text"], parse_mode="Markdown")
 
+async def play_scene(update: Update):
 async def play_scene(update: Update):
     uid = update.effective_user.id
     data = user_memory[uid]
@@ -200,9 +204,12 @@ async def play_scene(update: Update):
     node = scene[step]
     await send_node(update, node)
 
-    message = update.message or update.callback_query.message
+    if update.callback_query:
+        message = update.callback_query.message
+    else:
+        message = update.message
 
-    # ЕСЛИ ЕСТЬ ВЫБОР — ПОКАЗЫВАЕМ КНОПКИ ВЫБОРА
+    # ЕСЛИ ЕСТЬ ВЫБОР — ПОКАЗЫВАЕМ КНОПКИ И ЖДЁМ
     if "choices" in node:
         keyboard = [
             [InlineKeyboardButton(v["label"], callback_data=k)]
@@ -214,7 +221,9 @@ async def play_scene(update: Update):
         )
         return
 
-    # ИНАЧЕ — ПОКАЗЫВАЕМ КНОПКУ «ДАЛЬШЕ»
+    # ЕСЛИ ВЫБОРА НЕТ — ДВИГАЕМСЯ ДАЛЬШЕ
+    data["step"] += 1
+
     keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
     await message.reply_text(
         " ",
