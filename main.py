@@ -1,9 +1,5 @@
 import os
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup
-)
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
@@ -32,9 +28,7 @@ def init_user(uid: int):
 
 # ================== CHARACTER PROMPT ==================
 
-SYSTEM_PROMPT = """
-
-Ты — Чон Чонгук, также известный как Джакомо Конте. Альфа. 21 год.
+SYSTEM_PROMPT = """Ты — Чон Чонгук, также известный как Джакомо Конте. Альфа. 21 год.
 
 Биография.
 Ты родился и жил до двенадцати лет в Италии. Твоё детство было обычным, пока не погибли оба биологических родителя и твой младший родной брат.
@@ -123,36 +117,42 @@ SCENES = {
         }
     ],
 
-    # ===== РЕСТОРАН МОЖНО РАСШИРЯТЬ БЕСКОНЕЧНО =====
-
     "RESTAURANT": [
         {
             "image": "https://raw.githubusercontent.com/myunicornbeach-commits/tg-date-bots/main/images/restaurant/restaurant1.png",
-            "text": "_Приглушенный свет создает интимную и уютную атмосферу. Из глубин ресторана доносится фортепианная музыка, а из панорамных окон открывается вид на ночной город._"
+            "text": (
+                "_Приглушённый свет, тихая музыка и вид на ночной город._"
+            )
         },
         {
             "text": "Как тебе это место?",
             "choices": {
                 "expensive": {
                     "label": "Выглядит дорого…",
-                    "response": "Ах, я же не о деньгах спрашиваю. Не думай об этом, мне для тебя ничего не жалко."
+                    "response": (
+                        "Я не о деньгах спрашиваю. "
+                        "Мне важно, чтобы тебе было комфортно."
+                    )
                 },
                 "quiet": {
                     "label": "Почему именно этот ресторан?",
-                    "response": "Здесь тихо и почти нет других людей. Мы сможем провести время без посторонних взглядов."
+                    "response": (
+                        "Здесь тихо. "
+                        "И почти нет посторонних людей."
+                    )
                 }
             }
         },
         {
-            "text": "Присаживайся за столик.",
+            "text": "Присаживайся.",
             "choices": {
                 "near": {
                     "label": "Сесть рядом",
-                    "response": "Ты села рядом чтобы чувствовать себя в безопасности или просто хочешь быть ближе? Хотя не важно, я в любом случае рад что ты рядом."
+                    "response": "Ты решила быть ближе. Я это заметил."
                 },
                 "opposite": {
                     "label": "Сесть напротив",
-                    "response": "Так я смогу любоваться тобой весь вечер"
+                    "response": "Так я смогу смотреть на тебя."
                 }
             }
         },
@@ -161,8 +161,6 @@ SCENES = {
             "next_scene": "FREE_CHAT"
         }
     ],
-
-    # ===== ПРОГУЛКА БУДЕТ ДОПИСАНА ПОЗЖЕ =====
 
     "WALK": [
         {
@@ -201,24 +199,26 @@ async def play_scene(update: Update):
     node = scene[step]
     await send_node(update, node)
 
+    message = update.message or update.callback_query.message
+
     if "choices" in node:
         keyboard = [
             [InlineKeyboardButton(v["label"], callback_data=k)]
             for k, v in node["choices"].items()
         ]
-        await (update.message or update.callback_query.message).reply_text(
+        await message.reply_text(
             "Выбери.",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
 
     if node.get("next_button"):
-    keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
-    await (update.message or update.callback_query.message).reply_text(
-        " ",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-    return
+        keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
+        await message.reply_text(
+            " ",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        return
 
     data["step"] += 1
 
@@ -233,16 +233,7 @@ async def play_scene(update: Update):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     init_user(uid)
-
-    while True:
-        scene = SCENES[user_memory[uid]["scene"]]
-        step = user_memory[uid]["step"]
-        node = scene[step]
-
-        await play_scene(update)
-
-        if "choices" in node or node.get("next_button"):
-            break
+    await play_scene(update)
 
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -274,15 +265,14 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
+
     if uid not in user_memory:
         return
+
     if user_memory[uid]["mode"] != "FREE_CHAT":
         return
 
-    # Здесь позже будет вызов GPT
-    await update.message.reply_text(
-        "Я слушаю тебя."
-    )
+    await update.message.reply_text("Я слушаю тебя.")
 
 # ================== RUN ==================
 
