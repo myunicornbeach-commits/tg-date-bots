@@ -191,58 +191,42 @@ async def send_node(update: Update, node: dict):
     await message.reply_text(node["text"], parse_mode="Markdown")
 
 async def play_scene(update: Update):
-async def play_scene(update: Update):
     uid = update.effective_user.id
     data = user_memory[uid]
 
     scene = SCENES[data["scene"]]
     step = data["step"]
 
-    # Если сцена закончилась — ничего не делаем
     if step >= len(scene):
         return
 
     node = scene[step]
-
-    # Отправляем текст и картинку узла
     await send_node(update, node)
 
-    # Определяем, куда отвечать
     if update.callback_query:
         message = update.callback_query.message
     else:
         message = update.message
 
-    # ЕСЛИ В УЗЛЕ ЕСТЬ ВЫБОРЫ
     if "choices" in node:
         keyboard = [
             [InlineKeyboardButton(v["label"], callback_data=k)]
             for k, v in node["choices"].items()
         ]
-
         await message.reply_text(
             "Выбери:",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
 
-    # ЕСЛИ ВЫБОРОВ НЕТ — ЭТО ОБЫЧНЫЙ ТЕКСТ, ДВИГАЕМСЯ ДАЛЬШЕ
     data["step"] += 1
 
     keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
 
     await message.reply_text(
-        " ",
+        "Дальше",
         reply_markup=InlineKeyboardMarkup(keyboard)
         )
-
-    data["step"] += 1
-
-    keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
-    await message.reply_text(
-        " ",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
 
 # ================== HANDLERS ==================
 
