@@ -178,7 +178,9 @@ async def play_scene(update: Update):
     scene = SCENES[data["scene"]]
     step = data["step"]
 
+    # если шаг за пределами сцены — останавливаем
     if step >= len(scene):
+        await update.effective_chat.send_message("На этом всё для этой сцены.")
         return
 
     node = scene[step]
@@ -189,6 +191,7 @@ async def play_scene(update: Update):
     else:
         message = update.message
 
+    # Если есть варианты выбора — показываем их
     if "choices" in node:
         keyboard = [
             [InlineKeyboardButton(v["label"], callback_data=k)]
@@ -196,18 +199,17 @@ async def play_scene(update: Update):
         ]
         await message.reply_text(
             "Что ты выберешь?",
-            reply_markup=InlineKeyboardMarkup(keyboard)
+            reply_markup=InlineKeyboardMarkup(keyboard),
         )
         return
 
-    data["step"] += 1
-
+    # Если нет вариантов — делаем кнопку "Дальше"
     keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
-
     await message.reply_text(
         "Дальше",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-        )
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
+
 
 # ================== HANDLERS ==================
 
