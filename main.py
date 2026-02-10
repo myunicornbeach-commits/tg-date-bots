@@ -192,41 +192,34 @@ async def play_scene(update: Update):
     data = user_memory[uid]
 
     scene = SCENES[data["scene"]]
+    step = data["step"]
 
-    while True:
-        step = data["step"]
+    if step >= len(scene):
+        return
 
-        if step >= len(scene):
-            return
+    node = scene[step]
+    await send_node(update, node)
 
-        node = scene[step]
-        await send_node(update, node)
+    message = update.message or update.callback_query.message
 
-        message = update.message or update.callback_query.message
+    # ЕСЛИ ЕСТЬ ВЫБОР — ПОКАЗЫВАЕМ КНОПКИ ВЫБОРА
+    if "choices" in node:
+        keyboard = [
+            [InlineKeyboardButton(v["label"], callback_data=k)]
+            for k, v in node["choices"].items()
+        ]
+        await message.reply_text(
+            " ",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        return
 
-        # ЕСЛИ есть выбор — стоп и ждём
-        if "choices" in node:
-            keyboard = [
-                [InlineKeyboardButton(v["label"], callback_data=k)]
-                for k, v in node["choices"].items()
-            ]
-            await message.reply_text(
-                " ",
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
-            return
-
-        # ИНАЧЕ — это обычный шаг, идём дальше
-        data["step"] += 1
-
-        # Переход сцены
-        if "next_scene" in node:
-            data["scene"] = node["next_scene"]
-            data["step"] = 0
-            if data["scene"] == "FREE_CHAT":
-                data["mode"] = "FREE_CHAT"
-                return
-            scene = SCENES[data["scene"]]
+    # ИНАЧЕ — ПОКАЗЫВАЕМ КНОПКУ «ДАЛЬШЕ»
+    keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
+    await message.reply_text(
+        " ",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 # ================== HANDLERS ==================
 
@@ -242,13 +235,13 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = query.from_user.id
     data = user_memory[uid]
 
-    # Нажали кнопку «Дальше»
+    # КНОПКА «ДАЛЬШЕ»
     if query.data == "next":
         data["step"] += 1
         await play_scene(update)
         return
 
-    # Нажали вариант выбора
+    # ВЫБОР ИЗ CHOICES
     node = SCENES[data["scene"]][data["step"]]
     choice = node["choices"][query.data]
 
@@ -260,6 +253,7 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         data["step"] = 0
         if data["scene"] == "FREE_CHAT":
             data["mode"] = "FREE_CHAT"
+            return
     else:
         data["step"] += 1
 
