@@ -134,15 +134,7 @@ SCENES = {
                 ),
                 "next_scene": "DATE_END"
             }
-        }
-    }
-],
-
-"DATE_END": [
-    {
-        "text": "Вечер подходит к концу."
-    }
-],
+    ],
 
     "WALK": [
         {
