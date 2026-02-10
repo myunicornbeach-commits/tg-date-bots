@@ -243,9 +243,8 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # КНОПКА «ДАЛЬШЕ»
     if query.data == "next":
-        data["step"] += 1
-        await play_scene(update)
-        return
+    await play_scene(update)
+    return
 
     # ВЫБОР ИЗ CHOICES
     node = SCENES[data["scene"]][data["step"]]
