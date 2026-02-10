@@ -111,7 +111,7 @@ SCENES = {
 
     "RESTAURANT": [
         {
-            "image": "https://mriyaresort.com/upload/uf/5fc/h8z8fepy5cteoxjb6jghiy8p8dw1crdj.jpg",
+            "image": "https://i.ibb.co/wNDCwqVX/Picsart-26-02-10-16-02-19-386.png",
             "text": "_Приглушённый свет, тихая музыка и вид на ночной город._"
         },
         {
