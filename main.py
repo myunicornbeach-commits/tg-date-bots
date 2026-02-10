@@ -248,11 +248,13 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = query.from_user.id
     data = user_memory[uid]
 
+    # Нажали кнопку «Дальше»
     if query.data == "next":
         data["step"] += 1
         await play_scene(update)
         return
 
+    # Нажали вариант выбора
     node = SCENES[data["scene"]][data["step"]]
     choice = node["choices"][query.data]
 
