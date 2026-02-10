@@ -213,12 +213,12 @@ async def play_scene(update: Update):
         return
 
     if node.get("next_button"):
-        keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
-        await (update.message or update.callback_query.message).reply_text(
-            " ",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-        return
+    keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
+    await (update.message or update.callback_query.message).reply_text(
+        " ",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+    return
 
     data["step"] += 1
 
