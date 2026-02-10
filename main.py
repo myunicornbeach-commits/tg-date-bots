@@ -242,9 +242,9 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = user_memory[uid]
 
     # КНОПКА «ДАЛЬШЕ»
-if query.data == "next":
-    await play_scene(update)
-    return
+    if query.data == "next":
+        await play_scene(update)
+        return
 
     # ВЫБОР ИЗ CHOICES
     node = SCENES[data["scene"]][data["step"]]
