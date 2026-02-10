@@ -191,7 +191,6 @@ async def send_node(update: Update, node: dict):
     await message.reply_text(node["text"], parse_mode="Markdown")
 
 async def play_scene(update: Update):
-async def play_scene(update: Update):
     uid = update.effective_user.id
     data = user_memory[uid]
 
@@ -209,7 +208,6 @@ async def play_scene(update: Update):
     else:
         message = update.message
 
-    # ЕСЛИ ЕСТЬ ВЫБОР — ПОКАЗЫВАЕМ КНОПКИ И ЖДЁМ
     if "choices" in node:
         keyboard = [
             [InlineKeyboardButton(v["label"], callback_data=k)]
@@ -221,7 +219,6 @@ async def play_scene(update: Update):
         )
         return
 
-    # ЕСЛИ ВЫБОРА НЕТ — ДВИГАЕМСЯ ДАЛЬШЕ
     data["step"] += 1
 
     keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
