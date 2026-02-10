@@ -26,8 +26,6 @@ def init_user(uid: int):
     }
 
 # ================== CHARACTER PROFILE ==================
-# Биография и характер зафиксированы здесь.
-# Сейчас не используются напрямую, но будут переданы ИИ позже.
 
 SYSTEM_PROMPT = """
 Ты — Чон Чонгук, также известный как Джакомо Конте.
@@ -74,22 +72,19 @@ SYSTEM_PROMPT = """
 """
 
 # ================== SCENES ==================
-# СЦЕНЫ = ДАННЫЕ. ЛОГИКА ИХ НЕ ЗНАЕТ.
 
 SCENES = {
+
+    # ---------- INTRO ----------
     "INTRO": [
-        {
-            "text": "Я ждал тебя."
-        },
+        {"text": "Я ждал тебя."},
         {
             "text": (
                 "Сегодня ведь праздник. Я раньше никогда не отмечал и не привык к такому. "
-                "Думаю, что не стоит оставаться одной в такой вечер."
+                "Думаю что не стоит оставаться одной в такой вечер."
             )
         },
-        {
-            "text": "Составишь мне компанию?"
-        },
+        {"text": "Составишь мне компанию?"},
         {
             "text": "Сразу скажу. Я воспринимаю это как свидание.",
             "choices": {
@@ -105,9 +100,10 @@ SCENES = {
         }
     ],
 
+    # ---------- CONFIRM ----------
     "CONFIRM_YES": [
         {
-            "text": "Спасибо, что доверилась мне.",
+            "text": "Спасибо что доверилась мне.",
             "next_scene": "DATE_CHOICE"
         }
     ],
@@ -119,11 +115,74 @@ SCENES = {
         }
     ],
 
-    # Дальше сюда будем добавлять:
-    # DATE_CHOICE
-    # RESTAURANT
-    # WALK
-    # CINEMA
+    # ---------- DATE CHOICE ----------
+    "DATE_CHOICE": [
+        {
+            "text": "Куда ты хочешь пойти.",
+            "choices": {
+                "go_restaurant": {
+                    "label": "Ужин в ресторане",
+                    "next_scene": "RESTAURANT"
+                },
+                "go_walk": {
+                    "label": "Прогулка по ночному городу",
+                    "next_scene": "WALK"
+                }
+            }
+        }
+    ],
+
+    # ---------- RESTAURANT ----------
+    "RESTAURANT": [
+        {
+            "image": "https://example.com/restaurant.jpg",
+            "text": "_приглушённый свет и тихая фортепианная музыка из панорамных окон открывается вид на весь город_"
+        },
+        {
+            "text": "Как тебе это место?",
+            "choices": {
+                "expensive": {
+                    "label": "Выглядит дорого…",
+                    "response": "Ах, я же не о деньгах спрашиваю. Не думай об этом, мне для тебя ничего не жалко."
+                },
+                "why_here": {
+                    "label": "Почему именно этот ресторан?",
+                    "response": "Здесь тихо и почти нет других людей. Мы сможем провести время без посторонних взглядов."
+                },
+                "like_it": {
+                    "label": "Мне нравится. Часто здесь бываешь?",
+                    "response": "Нет. Я не любитель вычурных мест. Скажу по секрету, это впервые. Подумал что тебе понравится."
+                }
+            }
+        },
+        {
+            "text": "Присаживайся за столик.",
+            "choices": {
+                "sit_opposite": {
+                    "label": "Сесть напротив",
+                    "response": "Отлично. Так я смогу смотреть на тебя весь вечер."
+                },
+                "sit_near": {
+                    "label": "Сесть рядом",
+                    "response": "Ты села рядом чтобы чувствовать себя в безопасности или просто хочешь быть ближе. Хотя не важно, я в любом случае рад что ты рядом."
+                }
+            }
+        }
+    ],
+
+    # ---------- WALK (ПОКА ЗАГЛУШКА) ----------
+    "WALK": [
+        {
+            "text": "Мы выйдем на прогулку позже.",
+            "next_scene": "FREE_CHAT"
+        }
+    ],
+
+    "FREE_CHAT": [
+        {
+            "text": "..."
+        }
+    ]
 }
 
 # ================== SCENE ENGINE ==================
@@ -132,20 +191,23 @@ async def play_scene(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     data = user_memory[uid]
 
-    scene_name = data["scene"]
+    scene = SCENES.get(data["scene"])
     step = data["step"]
-    scene = SCENES.get(scene_name)
 
     if not scene or step >= len(scene):
         return
 
     node = scene[step]
 
-    # Текст
-    if "text" in node:
-        await update.message.reply_text(node["text"])
+    # IMAGE
+    if "image" in node:
+        await update.message.reply_photo(node["image"])
 
-    # Кнопки
+    # TEXT
+    if "text" in node:
+        await update.message.reply_text(node["text"], parse_mode="Markdown")
+
+    # CHOICES
     if "choices" in node:
         keyboard = [
             [InlineKeyboardButton(v["label"], callback_data=k)]
@@ -157,32 +219,26 @@ async def play_scene(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # Переход
+    # NEXT
     data["step"] += 1
     if "next_scene" in node:
         data["scene"] = node["next_scene"]
         data["step"] = 0
 
-# ================== /start ==================
+# ================== HANDLERS ==================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     init_user(uid)
 
-    # Проигрываем всю вступительную сцену сразу
     while user_memory[uid]["scene"] == "INTRO":
         await play_scene(update, context)
-
-# ================== CHAT ==================
 
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     if uid not in user_memory:
         init_user(uid)
-
     await play_scene(update, context)
-
-# ================== BUTTON HANDLER ==================
 
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -193,17 +249,17 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not data:
         return
 
-    scene = SCENES[data["scene"]]
-    node = scene[data["step"]]
-    choice = node["choices"].get(query.data)
+    node = SCENES[data["scene"]][data["step"]]
+    choice = node["choices"][query.data]
 
-    if not choice:
-        return
+    if "response" in choice:
+        await query.message.reply_text(choice["response"])
 
-    data["scene"] = choice["next_scene"]
-    data["step"] = 0
+    data["step"] += 1
+    if "next_scene" in choice:
+        data["scene"] = choice["next_scene"]
+        data["step"] = 0
 
-    await query.edit_message_text(choice["label"])
     await play_scene(update, context)
 
 # ================== RUN ==================
