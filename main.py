@@ -227,7 +227,18 @@ async def play_scene(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     init_user(uid)
-    await play_scene(update, context)
+
+    # Автопроигрываем сцену, пока не упрёмся в кнопку или выбор
+    while True:
+        scene = SCENES[user_memory[uid]["scene"]]
+        step = user_memory[uid]["step"]
+        node = scene[step]
+
+        await play_scene(update, context)
+
+        # Если шаг интерактивный — останавливаемся
+        if "choices" in node or node.get("next_button"):
+            break
 
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
