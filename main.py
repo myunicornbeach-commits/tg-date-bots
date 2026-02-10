@@ -213,11 +213,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    await query.message.edit_reply_markup(reply_markup=None)
 
     uid = query.from_user.id
     data = user_memory[uid]
 
-    # кнопка "Дальше"
     if query.data == "next":
         data["step"] += 1
         await play_scene(update)
@@ -226,11 +226,9 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     node = SCENES[data["scene"]][data["step"]]
     choice = node["choices"][query.data]
 
-    # показать реакцию, если есть
     if "response" in choice:
         await query.message.reply_text(choice["response"])
 
-    # переход в другую сцену
     if "next_scene" in choice:
         data["scene"] = choice["next_scene"]
         data["step"] = 0
