@@ -240,9 +240,6 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         data["step"] = 0
         await play_scene(update)
         return
-
-    data["step"] += 1
-    await play_scene(update)
     
 async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
