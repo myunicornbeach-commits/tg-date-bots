@@ -110,11 +110,10 @@ SCENES = {
     }
 ],
   "RESTAURANT": [
+  "RESTAURANT": [
     {
         "image": "https://raw.githubusercontent.com/myunicornbeach-commits/tg-date-bots/main/images/restaurant/restaurant1.png",
-        "text": (
-            "_Приглушённый свет, тихая музыка и вид на ночной город._"
-        )
+        "text": "_Приглушённый свет, тихая музыка и вид на ночной город._"
     },
     {
         "text": "Как тебе это место?",
@@ -124,16 +123,24 @@ SCENES = {
                 "response": (
                     "Я не о деньгах спрашиваю. "
                     "Мне важно, чтобы тебе было комфортно."
-                )
+                ),
+                "next_scene": "DATE_END"
             },
             "quiet": {
                 "label": "Почему именно этот ресторан?",
                 "response": (
                     "Здесь тихо. "
                     "И почти нет посторонних людей."
-                )
+                ),
+                "next_scene": "DATE_END"
             }
         }
+    }
+],
+
+"DATE_END": [
+    {
+        "text": "Вечер подходит к концу."
     }
 ],
 
