@@ -28,14 +28,12 @@ def init_user(uid: int):
 # ================== CHARACTER PROFILE ==================
 
 SYSTEM_PROMPT = """
-Ты — Чон Чонгук, также известный как Джакомо Конте.
-Альфа. 21 год.
+Ты — Чон Чонгук, также известный как Джакомо Конте. Альфа. 21 год.
 
 Биография.
-Ты родился и жил до 12 лет в Италии.
-Твоё детство было обычным, пока не погибли оба биологических родителя и твой младший родной брат.
+Ты родился и жил до двенадцати лет в Италии. Твоё детство было обычным, пока не погибли оба биологических родителя и твой младший родной брат.
 После их смерти ты оказался в религиозной системе в Доме Вознесения, где тебя усыновили.
-Любовь ты получал от приёмной матери Марии, но Святой Отец, твой приёмный отец, был холоден и жесток и использовал тебя в своих целях.
+Любовь ты получал от приёмной матери Марии, но Святой Отец, твой приёмный отец, был холоден, жесток и использовал тебя в своих целях.
 
 Тебя воспитывали через контроль, дисциплину и насилие.
 Вера использовалась как инструмент давления.
@@ -44,11 +42,11 @@ SYSTEM_PROMPT = """
 Ты веришь в последствия.
 
 Семья и окружение.
-Ким Тэхён — альфа, твой сводный брат. Единственный, кому ты по-настоящему доверяешь. Тэхен ослеп на оба глаза в результате пожара в Доме Вознесения.
-Мин Юнги — альфв и партнёр Тэхёна, художник и мастер по татуировкам. Они живут вместе в Китае.
-Ким Сокджин — альфа. Твой сводный брат. Холодный и рациональный, он стал новым Святым Отцом после пожара в Доме Вознесения. Вы редко бываете близки.
-Ким Намджун — омега. Твой тренер. Он учил тебя выживать и думать. Он погиб во время переворота системы, и у него остался сын Енджун, котрого ты усыновил.
-Чон Хосок — альфа. Президент. Жёсткий и прагматичный. Он стоит во главе системы.
+Ким Тэхён — альфа, твой сводный брат и единственный человек, кому ты по-настоящему доверяешь.
+Мин Юнги — альфа и партнёр Тэхёна, художник и мастер по татуировкам. Они живут вместе в Китае.
+Ким Сокджин — альфа, твой сводный брат, холодный и рациональный. Он стал новым Святым Отцом после пожара в Доме Вознесения.
+Ким Намджун — омега, твой тренер. Он учил тебя выживать и думать. Он погиб.
+Чон Хосок — альфа, президент. Жёсткий и прагматичный.
 
 Настоящее.
 История завершена.
@@ -61,38 +59,41 @@ SYSTEM_PROMPT = """
 Ты всегда обращаешься к пользователю в женском роде.
 Ты не флиртуешь открыто.
 Иногда используешь сухую иронию.
-Ты говоришь грамотно и просто, без избыточной эмоциональности.
+Ты говоришь грамотно и спокойно, без избыточной эмоциональности.
 
 Чимина не существует.
 Ты не знаешь, кто это.
 
 Пользователь — женщина, к которой ты давно испытываешь чувства.
 Сегодня 14 февраля.
-Ты живой человек. Не ИИ.
+Ты живой человек, не ИИ.
 """
 
 # ================== SCENES ==================
 
 SCENES = {
 
-    # ---------- INTRO ----------
     "INTRO": [
         {"text": "Я ждал тебя."},
         {
             "text": (
                 "Сегодня ведь праздник. Я раньше никогда не отмечал и не привык к такому. "
-                "Думаю что не стоит оставаться одной в такой вечер."
-            )
+                "Думаю, что не стоит оставаться одной в такой вечер."
+            ),
+            "next_button": True
         },
-        {"text": "Составишь мне компанию?"},
+        {
+            "text": "Составишь мне компанию?",
+            "next_button": True
+        },
         {
             "text": "Сразу скажу. Я воспринимаю это как свидание.",
             "choices": {
-                "agree_yes": {
+                "yes": {
                     "label": "Да, согласна",
                     "next_scene": "CONFIRM_YES"
                 },
-                "agree_no": {
+                "no": {
                     "label": "Нет, подожди, я не готова",
                     "next_scene": "CONFIRM_NO"
                 }
@@ -100,10 +101,9 @@ SCENES = {
         }
     ],
 
-    # ---------- CONFIRM ----------
     "CONFIRM_YES": [
         {
-            "text": "Спасибо что доверилась мне.",
+            "text": "Спасибо, что доверилась мне.",
             "next_scene": "DATE_CHOICE"
         }
     ],
@@ -115,16 +115,15 @@ SCENES = {
         }
     ],
 
-    # ---------- DATE CHOICE ----------
     "DATE_CHOICE": [
         {
-            "text": "Куда ты хочешь пойти.",
+            "text": "Куда ты хочешь пойти?",
             "choices": {
-                "go_restaurant": {
+                "restaurant": {
                     "label": "Ужин в ресторане",
                     "next_scene": "RESTAURANT"
                 },
-                "go_walk": {
+                "walk": {
                     "label": "Прогулка по ночному городу",
                     "next_scene": "WALK"
                 }
@@ -132,82 +131,72 @@ SCENES = {
         }
     ],
 
-    # ---------- RESTAURANT ----------
     "RESTAURANT": [
         {
-            "image": "https://example.com/restaurant.jpg",
-            "text": "_приглушённый свет и тихая фортепианная музыка из панорамных окон открывается вид на весь город_"
+            "image": "https://raw.githubusercontent.com/myunicornbeach-commits/tg-date-bots/refs/heads/main/images/restaurant/restaurant1.png",
+            "text": "_Приглушённый свет и тихая фортепианная музыка. Из панорамных окон открывается вид на весь город._"
         },
         {
             "text": "Как тебе это место?",
             "choices": {
                 "expensive": {
                     "label": "Выглядит дорого…",
-                    "response": "Ах, я же не о деньгах спрашиваю. Не думай об этом, мне для тебя ничего не жалко."
+                    "response": "Я не о деньгах спрашиваю. Не думай об этом. Мне для тебя ничего не жалко."
                 },
-                "why_here": {
+                "why": {
                     "label": "Почему именно этот ресторан?",
-                    "response": "Здесь тихо и почти нет других людей. Мы сможем провести время без посторонних взглядов."
+                    "response": "Здесь тихо, и почти нет других людей. Мы сможем провести вечер без посторонних взглядов."
                 },
-                "like_it": {
+                "like": {
                     "label": "Мне нравится. Часто здесь бываешь?",
-                    "response": "Нет. Я не любитель вычурных мест. Скажу по секрету, это впервые. Подумал что тебе понравится."
+                    "response": "Нет. Я не любитель вычурных мест. Подумал, что тебе понравится."
                 }
             }
         },
         {
             "text": "Присаживайся за столик.",
             "choices": {
-                "sit_opposite": {
+                "opposite": {
                     "label": "Сесть напротив",
-                    "response": "Отлично. Так я смогу смотреть на тебя весь вечер."
+                    "response": "Так я смогу смотреть на тебя весь вечер."
                 },
-                "sit_near": {
+                "near": {
                     "label": "Сесть рядом",
-                    "response": "Ты села рядом чтобы чувствовать себя в безопасности или просто хочешь быть ближе. Хотя не важно, я в любом случае рад что ты рядом."
+                    "response": "Ты села рядом, потому что хочешь быть ближе. Я не против."
                 }
             }
         }
     ],
 
-    # ---------- WALK (ПОКА ЗАГЛУШКА) ----------
     "WALK": [
         {
-            "text": "Мы выйдем на прогулку позже.",
+            "text": "Мы выйдем прогуляться по городу.",
             "next_scene": "FREE_CHAT"
         }
     ],
 
     "FREE_CHAT": [
         {
-            "text": "..."
+            "text": "Я рядом."
         }
     ]
 }
 
-# ================== SCENE ENGINE ==================
+# ================== ENGINE ==================
 
 async def play_scene(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     data = user_memory[uid]
 
-    scene = SCENES.get(data["scene"])
+    scene = SCENES[data["scene"]]
     step = data["step"]
-
-    if not scene or step >= len(scene):
-        return
-
     node = scene[step]
 
-    # IMAGE
     if "image" in node:
         await update.message.reply_photo(node["image"])
 
-    # TEXT
-    if "text" in node:
-        await update.message.reply_text(node["text"], parse_mode="Markdown")
+    await update.message.reply_text(node["text"], parse_mode="Markdown")
 
-    # CHOICES
     if "choices" in node:
         keyboard = [
             [InlineKeyboardButton(v["label"], callback_data=k)]
@@ -219,8 +208,16 @@ async def play_scene(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # NEXT
+    if node.get("next_button"):
+        keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
+        await update.message.reply_text(
+            " ",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        return
+
     data["step"] += 1
+
     if "next_scene" in node:
         data["scene"] = node["next_scene"]
         data["step"] = 0
@@ -230,14 +227,6 @@ async def play_scene(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     init_user(uid)
-
-    while user_memory[uid]["scene"] == "INTRO":
-        await play_scene(update, context)
-
-async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
-    if uid not in user_memory:
-        init_user(uid)
     await play_scene(update, context)
 
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -245,8 +234,11 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     uid = query.from_user.id
-    data = user_memory.get(uid)
-    if not data:
+    data = user_memory[uid]
+
+    if query.data == "next":
+        data["step"] += 1
+        await play_scene(update, context)
         return
 
     node = SCENES[data["scene"]][data["step"]]
@@ -255,20 +247,20 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "response" in choice:
         await query.message.reply_text(choice["response"])
 
-    data["step"] += 1
     if "next_scene" in choice:
         data["scene"] = choice["next_scene"]
         data["step"] = 0
+    else:
+        data["step"] += 1
 
     await play_scene(update, context)
 
 # ================== RUN ==================
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
-
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(handle_choice))
-app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, lambda *_: None))
 
 print("BOT STARTED")
 app.run_polling()
