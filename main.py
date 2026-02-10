@@ -209,7 +209,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     init_user(uid)
     await play_scene(update)
 
-async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -238,7 +238,7 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         data["step"] += 1
 
     await play_scene(update)
-
+    
 async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
 
