@@ -188,7 +188,7 @@ async def play_scene(update: Update):
             for k, v in node["choices"].items()
         ]
         await message.reply_text(
-            "Выбери:",
+            "Что ты выберешь?",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
         return
@@ -213,7 +213,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    await query.message.edit_reply_markup(reply_markup=None)
 
     uid = query.from_user.id
     data = user_memory[uid]
@@ -232,9 +231,10 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "next_scene" in choice:
         data["scene"] = choice["next_scene"]
         data["step"] = 0
-    else:
-        data["step"] += 1
+        await play_scene(update)
+        return
 
+    data["step"] += 1
     await play_scene(update)
     
 async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
