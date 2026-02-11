@@ -260,7 +260,7 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     uid = query.from_user.id
 
-    # 🔹 Проверяем, есть ли пользователь в памяти
+    # Если пользователь пропал из памяти (перезапуск бота) — создаём заново
     if uid not in user_memory:
         init_user(uid)
         await query.message.reply_text("Бот был перезапущен — начнём заново 🙂")
@@ -269,7 +269,7 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     data = user_memory[uid]
 
-    # ─────────── КНОПКА "ДАЛЬШЕ"
+    # ---------- КНОПКА "ДАЛЬШЕ"
     if query.data == "next":
         data["step"] += 1
         scene = SCENES[data["scene"]]
@@ -279,7 +279,7 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await play_scene(update)
         return
 
-    # ─────────── ОБРАБОТКА ВЫБОРА
+    # ---------- ОБРАБОТКА ВЫБОРА
     scene = SCENES[data["scene"]]
     step = data["step"]
     node = scene[step]
@@ -290,13 +290,26 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     choice = node["choices"][query.data]
 
+    # Ответ персонажа
     if "response" in choice:
         await query.message.reply_text(choice["response"])
 
+    # Если указан next_scene — переходим в другую сцену
     if "next_scene" in choice:
         data["scene"] = choice["next_scene"]
         data["step"] = 0
         await play_scene(update)
+        return
+
+    # ИНАЧЕ (next_scene НЕТ) — двигаем шаг ВНУТРИ текущей сцены
+    data["step"] += 1
+    scene = SCENES[data["scene"]]
+    if data["step"] >= len(scene):
+        await query.message.reply_text("На этом всё для этой сцены.")
+        return
+
+    await play_scene(update)
+
 
     
 async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
