@@ -340,12 +340,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await play_scene(update)
 
 
+
+
+ import asyncio  # обязательно добавь в начале файла, если его нет
+
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     uid = query.from_user.id
 
-    # Если пользователь пропал из памяти (перезапуск бота) — создаём заново
+    # 🔹 Проверяем, есть ли пользователь в памяти
     if uid not in user_memory:
         init_user(uid)
         await query.message.reply_text("Бот был перезапущен — начнём заново 🙂")
@@ -361,39 +365,46 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data["step"] >= len(scene):
             await query.message.reply_text("На этом всё для этой сцены.")
             return
+
         await play_scene(update)
         return
 
-    # ---------- ОБРАБОТКА ВЫБОРА
+    # ---------- ОБРАБОТКА ВЫБОРА ----------
     scene = SCENES[data["scene"]]
     step = data["step"]
     node = scene[step]
 
+    # если в текущем узле вообще нет "choices"
     if "choices" not in node:
         await query.message.reply_text("Ошибка: вариантов выбора нет.")
         return
 
     choice = node["choices"][query.data]
 
-    # Ответ персонажа
+    # Ответ персонажа, если есть
     if "response" in choice:
         await query.message.reply_text(choice["response"])
 
-    # Если указан next_scene — переходим в другую сцену
+    # Если указан next_scene — переходим в новую сцену
     if "next_scene" in choice:
         data["scene"] = choice["next_scene"]
         data["step"] = 0
         await play_scene(update)
         return
 
-    # ИНАЧЕ (next_scene НЕТ) — двигаем шаг ВНУТРИ текущей сцены
+    # Если next_scene нет — значит остаёмся в текущей сцене
+    await asyncio.sleep(0.6)  # небольшая пауза для естественности
     data["step"] += 1
+
+    # повторная проверка конца сцены
     scene = SCENES[data["scene"]]
     if data["step"] >= len(scene):
         await query.message.reply_text("На этом всё для этой сцены.")
         return
 
+    # показываем следующий узел
     await play_scene(update)
+
 
 
     
