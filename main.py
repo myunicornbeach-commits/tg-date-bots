@@ -1,4 +1,5 @@
 import os
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
@@ -339,10 +340,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     init_user(uid)
     await play_scene(update)
 
-
-
-
- import asyncio  # обязательно добавь в начале файла, если его нет
 
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
