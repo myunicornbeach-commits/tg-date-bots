@@ -560,24 +560,15 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     node = scene[step]
 
     if "choices" not in node:
-        await query.message.reply_text("Ошибка: вариантов выбора нет.")
-        return
+    if "choices" in node:
+    keyboard = [[InlineKeyboardButton(v["label"], callback_data=k)]
+                for k, v in node["choices"].items()]
 
-    choice = node["choices"][query.data]
-
-    # Отправляем ответ персонажа
-    if "response" in choice:
-        await query.message.reply_text(choice["response"])
-
-    # Если есть next_scene — переходим в новую сцену
-    if "next_scene" in choice:
-    data["scene"] = choice["next_scene"]
-    data["step"] = 0
-
-    if choice["next_scene"] == "FREE_CHAT":
-        data["mode"] = "FREE_CHAT"
-
-    await play_scene(update)
+    await message.reply_text(
+        node["text"],
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
     return
 
     # → если next_scene нет — продолжаем текущую сцену
