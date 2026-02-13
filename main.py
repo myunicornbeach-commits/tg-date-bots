@@ -171,7 +171,7 @@ SCENES = {
 
     {
         # официант приносит меню
-        "image": "https://i.ibb.co/YdpLP6bR/restaurant-menu.jpg",
+        "image": "https://i.ibb.co/Q7YM9pxQ/ccaa0556ee349ec22fc04d30ab16016e.jpg",
         "text": "_Официант тихо подносит меню._"
     },
 
