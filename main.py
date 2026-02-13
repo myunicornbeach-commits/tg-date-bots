@@ -206,7 +206,7 @@ SCENES = {
 
     {
         # официант приносит еду
-        "image": "https://i.ibb.co/VLLtRtK/restaurant-dinner.jpg",
+        "image": "https://i.ibb.co/ZR359Qbf/ab21b851c2d4477298048a0a1af0a2ae.jpg",
         "text": (
             "_За разговорами время летит быстро, и вскоре на горизонте появляется официант "
             "с готовыми блюдами._"
