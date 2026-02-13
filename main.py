@@ -405,7 +405,7 @@ SCENES = {
     },
 
     {
-        "image": "https://i.ibb.co/nkLRnVY/flowers.jpg",
+        "image": "https://i.ibb.co/BV86ggwV/Picsart-26-02-14-00-28-51-738.jpg",
         "text": "_Затем Чонгук достаёт откуда-то огромный букет цветов и протягивает его тебе._"
     },
 
