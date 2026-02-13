@@ -482,8 +482,14 @@ async def play_scene(update: Update):
     if step >= len(scene):
         await update.effective_chat.send_message("На этом всё для этой сцены.")
         return
-node = scene[step]
-    await send_node(update, node)
+
+    node = scene[step]
+
+if "image" in node:
+    if update.callback_query:
+        await update.callback_query.message.reply_photo(node["image"])
+    else:
+        await update.message.reply_photo(node["image"])
     
 
     if update.callback_query:
