@@ -571,10 +571,14 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Если есть next_scene — переходим в новую сцену
     if "next_scene" in choice:
-        data["scene"] = choice["next_scene"]
-        data["step"] = 0
-        await play_scene(update)
-        return
+    data["scene"] = choice["next_scene"]
+    data["step"] = 0
+
+    if choice["next_scene"] == "FREE_CHAT":
+        data["mode"] = "FREE_CHAT"
+
+    await play_scene(update)
+    return
 
     # → если next_scene нет — продолжаем текущую сцену
     await asyncio.sleep(0.8)  # лёгкая пауза, чтобы выглядело естественно
