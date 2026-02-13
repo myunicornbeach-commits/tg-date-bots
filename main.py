@@ -555,33 +555,45 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     return
 
     # =========== ОБРАБОТКА ВЫБОРА ===========
-    scene = SCENES[data["scene"]]
-    step = data["step"]
-    node = scene[step]
+    
+scene = SCENES[data["scene"]]
+step = data["step"]
+node = scene[step]
 
-    if "choices" not in node:
-    if "choices" in node:
-    keyboard = [[InlineKeyboardButton(v["label"], callback_data=k)]
-                for k, v in node["choices"].items()]
-
-    await message.reply_text(
-        node["text"],
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-    )
+# если в узле нет вариантов выбора — это ошибка логики
+if "choices" not in node:
+    await query.message.reply_text("Ошибка: вариантов выбора нет.")
     return
 
-    # → если next_scene нет — продолжаем текущую сцену
-    await asyncio.sleep(0.8)  # лёгкая пауза, чтобы выглядело естественно
+# получаем выбранный вариант
+choice = node["choices"].get(query.data)
 
-    data["step"] += 1
-    scene = SCENES[data["scene"]]
+if not choice:
+    await query.message.reply_text("Ошибка выбора.")
+    return
 
-    if data["step"] >= len(scene):
-        await query.message.reply_text("На этом всё для этой сцены.")
-        return
+# отправляем ответ персонажа, если он есть
+if "response" in choice:
+    await query.message.reply_text(choice["response"])
 
+# если есть переход в другую сцену
+if "next_scene" in choice:
+    data["scene"] = choice["next_scene"]
+    data["step"] = 0
     await play_scene(update)
+    return
+
+# иначе продолжаем текущую сцену
+await asyncio.sleep(0.8)
+
+data["step"] += 1
+scene = SCENES[data["scene"]]
+
+if data["step"] >= len(scene):
+    await query.message.reply_text("На этом всё для этой сцены.")
+    return
+
+await play_scene(update)
 
 
     
