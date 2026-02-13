@@ -535,16 +535,20 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # =========== КНОПКА "ДАЛЬШЕ" ===========
     if query.data == "next":
-        data["step"] += 1
-        scene = SCENES[data["scene"]]
+    if query.data == "next":
+    data["step"] += 1
+    scene = SCENES[data["scene"]]
 
-        # если шаг за пределами сцены
-        if data["step"] >= len(scene):
-            await query.message.reply_text("На этом всё для этой сцены.")
-            return
+    print("DEBUG → SCENE:", data["scene"])
+    print("DEBUG → STEP:", data["step"])
+    print("DEBUG → LEN:", len(scene))
 
-        await play_scene(update)
+    if data["step"] >= len(scene):
+        await query.message.reply_text("На этом всё для этой сцены.")
         return
+
+    await play_scene(update)
+    return
 
     # =========== ОБРАБОТКА ВЫБОРА ===========
     scene = SCENES[data["scene"]]
