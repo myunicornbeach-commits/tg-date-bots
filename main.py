@@ -20,6 +20,7 @@ if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN не задан")
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+client = openai.OpenAI()
 if not openai.api_key:
     raise RuntimeError("OPENAI_API_KEY не задан")  # <-- новая проверка
 
@@ -657,13 +658,13 @@ async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # === обновляем краткое описание диалога (каждые 5 сообщений) ===
     if len(chat_memory[uid]["dialogue"]) % 5 == 0:
-        summarization_prompt = f"""
-Ты играешь роль персонажа Чонгука. 
-Суммируй последние фразы в 2-3 предложениях: 
-что происходит, что ты чувствуешь, как она себя ведёт.
-"""
+        summarization_prompt = (
+            "Ты играешь роль персонажа Чонгука.\n"
+            "Суммируй последние фразы в 2-3 предложениях: "
+            "что происходит, что ты чувствуешь, как она себя ведёт."
+        )
         try:
-            summary_completion = openai.ChatCompletion.create(
+            summary_completion = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": summarization_prompt},
@@ -674,7 +675,7 @@ async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 temperature=0.6,
                 max_tokens=100,
             )
-            chat_memory[uid]["summary"] = summary_completion.choices[0].message["content"]
+            chat_memory[uid]["summary"] = summary_completion.choices[0].message.content
         except Exception as e:
             print(f"Ошибка суммаризации: {e}")
 
@@ -695,20 +696,19 @@ async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ] + chat_memory[uid]["dialogue"][-10:] + [{"role": "user", "content": user_text}]
 
     try:
-        completion = openai.ChatCompletion.create(
-            # !!! ВОТ ЗДЕСЬ МЕНЯЕШЬ МОДЕЛЬ !!!
-            model="gpt-4o-mini",  # <-- Сюда вставь нужную модель
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",  # твоя модель (нового поколения)
             messages=messages,
             temperature=random.uniform(0.7, 0.95),
             max_tokens=300,
         )
 
-        reply = completion.choices[0].message["content"].strip()
+        reply = completion.choices[0].message.content.strip()
 
         # сохраняем ответ Чонгука
         chat_memory[uid]["dialogue"].append({"role": "assistant", "content": reply})
 
-        # выводим ответ
+        # выводим ответ пользователю
         await update.message.reply_text(reply)
 
     except Exception as e:
