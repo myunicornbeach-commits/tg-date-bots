@@ -474,7 +474,6 @@ async def send_node(update: Update, node: dict):
     # Отправляем текст
     await message.reply_text(node["text"], parse_mode="Markdown")
 
-
 async def play_scene(update: Update):
     uid = update.effective_user.id
     data = user_memory[uid]
@@ -482,46 +481,70 @@ async def play_scene(update: Update):
     scene = SCENES[data["scene"]]
     step = data["step"]
 
-    # если шаг за пределами сцены — останавливаем
+    # Проверяем, не конец ли сцены
     if step >= len(scene):
         await update.effective_chat.send_message("На этом всё для этой сцены.")
         return
 
     node = scene[step]
 
-    # === если есть картинка ===
+    # === Отправка изображения с защитой ===
     if "image" in node:
-        if update.callback_query:
-            await update.callback_query.message.reply_photo(node["image"])
-        else:
-            await update.message.reply_photo(node["image"])
+        image_url = node["image"].strip()
+        if image_url:
+            try:
+                if update.callback_query:
+                    await update.callback_query.message.reply_photo(image_url)
+                else:
+                    await update.message.reply_photo(image_url)
+            except Exception as e:
+                print(f"⚠️ Ошибка при загрузке изображения: {e}")
+                await update.effective_chat.send_message("[Не удалось загрузить изображение]")
 
-    # === определяем сообщение ===
+    # === Определяем источник сообщения ===
     if update.callback_query:
         message = update.callback_query.message
     else:
         message = update.message
 
-    # === если есть варианты выбора — показываем кнопки ===
+    # Безопасно извлекаем текст узла
+    text = node.get("text", "").strip()
+    if not text:
+        text = "..."
+
+    # === Функция для безопасной отправки текста ===
+    async def safe_send(text, markup=None):
+        try:
+            # Разбиение слишком длинных сообщений
+            MAX_LEN = 3900
+            if len(text) > MAX_LEN:
+                for i in range(0, len(text), MAX_LEN):
+                    part = text[i:i+MAX_LEN]
+                    await message.reply_text(
+                        part,
+                        parse_mode="Markdown",
+                        reply_markup=markup if i + MAX_LEN >= len(text) else None,
+                    )
+            else:
+                await message.reply_text(text, parse_mode="Markdown", reply_markup=markup)
+        except Exception as err:
+            print(f"⚠️ Ошибка при отправке текста: {err}")
+            await message.reply_text(text, reply_markup=markup)
+
+    # === Если есть выборы ===
     if "choices" in node and node["choices"]:
         keyboard = [
             [InlineKeyboardButton(opt["label"], callback_data=key)]
             for key, opt in node["choices"].items()
         ]
-        await message.reply_text(
-            node["text"],
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
-
+        markup = InlineKeyboardMarkup(keyboard)
+        await safe_send(text, markup)
     else:
-        # если выборов нет — кнопка "Дальше"
+        # если выборов нет — показываем кнопку "Дальше"
         keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
-        await message.reply_text(
-            node["text"],
-            parse_mode="Markdown",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-        )
+        markup = InlineKeyboardMarkup(keyboard)
+        await safe_send(text, markup)
+
 
 
     
