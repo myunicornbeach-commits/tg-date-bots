@@ -461,18 +461,20 @@ SCENES = {
 # ================== ENGINE ==================
 
 async def send_node(update: Update, node: dict):
+    # Универсальная функция для отправки узла (текста + картинки)
     if update.callback_query:
         message = update.callback_query.message
     else:
         message = update.message
 
+    # Если в узле есть изображение — показываем его
     if "image" in node:
         await message.reply_photo(node["image"])
 
+    # Отправляем текст
     await message.reply_text(node["text"], parse_mode="Markdown")
 
 
-=InlineKeyboardMarkup(keyboard),
 async def play_scene(update: Update):
     uid = update.effective_user.id
     data = user_memory[uid]
@@ -487,20 +489,20 @@ async def play_scene(update: Update):
 
     node = scene[step]
 
-    # === если есть картинка
+    # === если есть картинка ===
     if "image" in node:
         if update.callback_query:
             await update.callback_query.message.reply_photo(node["image"])
         else:
             await update.message.reply_photo(node["image"])
 
-    # === выбираем, из какого источника отправляем сообщение
+    # === определяем сообщение ===
     if update.callback_query:
         message = update.callback_query.message
     else:
         message = update.message
 
-    # === если есть варианты выбора — показать их
+    # === если есть варианты выбора — показываем кнопки ===
     if "choices" in node and node["choices"]:
         keyboard = [
             [InlineKeyboardButton(opt["label"], callback_data=key)]
@@ -513,13 +515,16 @@ async def play_scene(update: Update):
         )
 
     else:
-        # если выбора нет — показать кнопку "Дальше"
+        # если выборов нет — кнопка "Дальше"
         keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
         await message.reply_text(
             node["text"],
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
+
+
+    
 
 
 # ================== HANDLERS ==================
