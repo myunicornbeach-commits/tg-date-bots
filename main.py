@@ -576,6 +576,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await play_scene(update)
 
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     uid = query.from_user.id
@@ -609,32 +610,32 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text("Ошибка выбора.")
         return
 
-        # Ответ персонажа
+    # Ответ персонажа
     if "response" in choice:
         await query.message.reply_text(choice["response"])
 
-if "next_scene" in choice:
-    data["scene"] = choice["next_scene"]
-    data["step"] = 0
+    # Переход в другую сцену
+    if "next_scene" in choice:
+        data["scene"] = choice["next_scene"]
+        data["step"] = 0
 
-    # Если это переход в свободный чат
-    if data["scene"] == "FREE_CHAT":
-        data["mode"] = "FREE_CHAT"
-        await query.message.reply_text("Теперь мы можем просто поговорить 💬")
+        # Если это переход в свободный чат
+        if data["scene"] == "FREE_CHAT":
+            data["mode"] = "FREE_CHAT"
+            await query.message.reply_text("Теперь мы можем просто поговорить 💬")
 
-        uid = query.from_user.id
-        user_long_memory[uid] = (
-            "Ты и Чонгук уже провели вечер вместе на свидании. "
-            "Он помнит об этом и дорожит тем вечером."
-        )
+            # 💾 Запоминаем, что это было свидание
+            uid = query.from_user.id
+            user_long_memory[uid] = (
+                "Ты и Чонгук уже провели вечер вместе на свидании. "
+                "Он помнит об этом и дорожит тем вечером."
+            )
 
-        return  # ← вот этот return должен быть на том же уровне, что и await query.message.reply_text(...)
-
+            return
 
         # Иначе продолжаем историю
         await play_scene(update)
         return
-
 
     # Иначе просто идём дальше
     await asyncio.sleep(0.8)
