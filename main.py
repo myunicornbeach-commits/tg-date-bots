@@ -557,13 +557,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     init_user(uid)
     await play_scene(update)
 
-
 async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     uid = query.from_user.id
 
-    # Проверяем, есть ли пользователь в памяти
     if uid not in user_memory:
         init_user(uid)
         await query.message.reply_text("Бот был перезапущен — начнём заново 🙂")
@@ -573,14 +571,14 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     data = user_memory[uid]
     scene = SCENES[data["scene"]]
 
-    # =========== КНОПКА "ДАЛЬШЕ" ===========
+    # Кнопка "Дальше"
     if query.data == "next":
         data["step"] += 1
         await query.answer()
         await play_scene(update)
         return
 
-    # =========== ОБРАБОТКА ВЫБОРА ===========
+    # Выбор пользователя
     step = data["step"]
     node = scene[step]
 
@@ -589,34 +587,30 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     choice = node["choices"].get(query.data)
-
     if not choice:
         await query.message.reply_text("Ошибка выбора.")
         return
 
-    # Отправляем ответ персонажа
+    # Ответ персонажа
     if "response" in choice:
         await query.message.reply_text(choice["response"])
 
-    # Если есть переход в другую сцену
+    # ⬇️ Этот блок должен быть внутри функции! (с правильными отступами)
+    if "next_scene" in choice:
+        data["scene"] = choice["next_scene"]
+        data["step"] = 0
 
-if "next_scene" in choice:
-    data["scene"] = choice["next_scene"]
-    data["step"] = 0
+        # Если это переход в свободный чат
+        if data["scene"] == "FREE_CHAT":
+            data["mode"] = "FREE_CHAT"
+            await query.message.reply_text("Теперь мы можем просто поговорить 💬")
+            return
 
-    # Если это переход в свободный режим общения
-    if data["scene"] == "FREE_CHAT":
-        data["mode"] = "FREE_CHAT"
-        await query.message.reply_text("Теперь мы можем просто поговорить 💬")
+        # Иначе продолжаем историю
+        await play_scene(update)
         return
 
-    # Иначе продолжаем обычную историю
-    await play_scene(update)
-    return
-
-
-
-    # Иначе просто двигаемся дальше по сцене
+    # Иначе просто идём дальше
     await asyncio.sleep(0.8)
     data["step"] += 1
 
@@ -625,6 +619,8 @@ if "next_scene" in choice:
         return
 
     await play_scene(update)
+
+
 
 
 async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
