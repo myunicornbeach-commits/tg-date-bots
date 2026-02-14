@@ -626,24 +626,10 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
             
-        return  # ← этот return должен быть на том же уровне, что и await query.message...
+          return  # ← этот return должен быть на том же уровне, что и await query.message...
 
 
-        # Иначе продолжаем историю
-        await play_scene(update)
-        return
-
-
-            return
-
-        # Иначе продолжаем историю
-        await play_scene(update)
-        return
-
-
-          
-            return
-
+    
         # Иначе продолжаем историю
         await play_scene(update)
         return
