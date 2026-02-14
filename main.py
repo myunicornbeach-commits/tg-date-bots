@@ -485,27 +485,38 @@ async def play_scene(update: Update):
 
     node = scene[step]
 
-if "image" in node:
-    if update.callback_query:
-        await update.callback_query.message.reply_photo(node["image"])
-    else:
-        await update.message.reply_photo(node["image"])
-    
+    # === если есть картинка в узле ===
+    if "image" in node:
+        if update.callback_query:
+            await update.callback_query.message.reply_photo(node["image"])
+        else:
+            await update.message.reply_photo(node["image"])
 
+    # === выбираем сообщение (в зависимости от того, callback или нет)
     if update.callback_query:
         message = update.callback_query.message
     else:
         message = update.message
 
-if "choices" in node:
-                # Если нет вариантов — делаем кнопку "Дальше"
-    keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
-    await update.effective_message.reply_text(
-        node["text"],
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-    )
-
+    # === если есть варианты выбора
+    if "choices" in node:
+        keyboard = [
+            [InlineKeyboardButton(opt["label"], callback_data=key)]
+            for key, opt in node["choices"].items()
+        ]
+        await message.reply_text(
+            node["text"],
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
+    else:
+        # если нет вариантов — показываем кнопку "Дальше"
+        keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
+        await message.reply_text(
+            node["text"],
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(keyboard),
+        )
 
 
 
