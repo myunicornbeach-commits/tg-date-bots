@@ -19,6 +19,7 @@ if not BOT_TOKEN:
 # ================== USER MEMORY ==================
 
 user_memory = {}
+chat_memory = {}  # <-- ДОБАВЬ ЭТУ СТРОКУ СЮДА
 
 def init_user(uid: int):
     user_memory[uid] = {
@@ -26,6 +27,7 @@ def init_user(uid: int):
         "step": 0,
         "mode": "SCENE"  # SCENE | FREE_CHAT
     }
+
 
 # ================== CHARACTER PROMPT ==================
 
