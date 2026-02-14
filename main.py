@@ -600,18 +600,19 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Если есть переход в другую сцену
     if "next_scene" in choice:
-        data["scene"] = choice["next_scene"]
-        data["step"] = 0
+    data["scene"] = choice["next_scene"]
+    data["step"] = 0
 
-        # Проверяем, нужно ли перейти в свободный чат
-        if data["scene"] == "FREE_CHAT":
-            data["mode"] = "FREE_CHAT"
-            await query.message.reply_text("Теперь мы можем просто поговорить 💬")
-            return
-
-        # Иначе продолжаем обычную историю
-        await play_scene(update)
+    # Если это переход в свободный режим общения
+    if data["scene"] == "FREE_CHAT":
+        data["mode"] = "FREE_CHAT"
+        await query.message.reply_text("Теперь мы можем просто поговорить 💬")
         return
+
+    # Иначе продолжаем обычную историю
+    await play_scene(update)
+    return
+
 
     # Иначе просто двигаемся дальше по сцене
     await asyncio.sleep(0.8)
