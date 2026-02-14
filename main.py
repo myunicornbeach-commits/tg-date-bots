@@ -549,6 +549,7 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     data = user_memory[uid]
+    scene = SCENES[data["scene"]]
 
     # =========== КНОПКА "ДАЛЬШЕ" ===========
     if query.data == "next":
@@ -557,85 +558,59 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await play_scene(update)
         return
 
+    # =========== ОБРАБОТКА ВЫБОРА ===========
+    step = data["step"]
+    node = scene[step]
 
-    # =========== КНОПКА "ДАЛЬШЕ" ===========
-if query.data == "next":
+    if "choices" not in node:
+        await query.message.reply_text("Ошибка: вариантов выбора нет.")
+        return
+
+    choice = node["choices"].get(query.data)
+
+    if not choice:
+        await query.message.reply_text("Ошибка выбора.")
+        return
+
+    # Отправляем ответ персонажа
+    if "response" in choice:
+        await query.message.reply_text(choice["response"])
+
+    # Если есть переход в другую сцену
+    if "next_scene" in choice:
+        data["scene"] = choice["next_scene"]
+        data["step"] = 0
+
+        # Проверяем, нужно ли перейти в свободный чат
+        if data["scene"] == "FREE_CHAT":
+            data["mode"] = "FREE_CHAT"
+            await query.message.reply_text("Теперь мы можем просто поговорить 💬")
+            return
+
+        # Иначе продолжаем обычную историю
+        await play_scene(update)
+        return
+
+    # Иначе просто двигаемся дальше по сцене
+    await asyncio.sleep(0.8)
     data["step"] += 1
-    await query.answer()
-    await play_scene(update)
-    return
-
-
-
-
-    print("DEBUG → SCENE:", data["scene"])
-    print("DEBUG → STEP:", data["step"])
-    print("DEBUG → LEN:", len(scene))
 
     if data["step"] >= len(scene):
         await query.message.reply_text("На этом всё для этой сцены.")
         return
 
     await play_scene(update)
-    return
-
-    # =========== ОБРАБОТКА ВЫБОРА ===========
-    
-scene = SCENES[data["scene"]]
-step = data["step"]
-node = scene[step]
-
-# если в узле нет вариантов выбора — это ошибка логики
-if "choices" not in node:
-    await query.message.reply_text("Ошибка: вариантов выбора нет.")
-    return
-
-# получаем выбранный вариант
-choice = node["choices"].get(query.data)
-
-if not choice:
-    await query.message.reply_text("Ошибка выбора.")
-    return
-
-# отправляем ответ персонажа, если он есть
-if "response" in choice:
-    await query.message.reply_text(choice["response"])
-
-# если есть переход в другую сцену
-if "next_scene" in choice:
-    data["scene"] = choice["next_scene"]
-    data["step"] = 0
-    await play_scene(update)
-    return
-
-# иначе продолжаем текущую сцену
-await asyncio.sleep(0.8)
-
-data["step"] += 1
-scene = SCENES[data["scene"]]
-
-if data["step"] >= len(scene):
-    await query.message.reply_text("На этом всё для этой сцены.")
-    return
-
-await play_scene(update)
 
 
-    
-
-
-
-    
 async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
-
     if uid not in user_memory:
         return
-
     if user_memory[uid]["mode"] != "FREE_CHAT":
         return
 
     await update.message.reply_text("Я слушаю тебя.")
+
 
 # ================== RUN ==================
 
@@ -644,5 +619,5 @@ app.add_handler(CommandHandler("start", start))
 app.add_handler(CallbackQueryHandler(handle_choice))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, free_chat))
 
-print("BOT STARTED")
+print("BOT STARTED ✅")
 app.run_polling()
