@@ -599,7 +599,8 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(choice["response"])
 
     # Если есть переход в другую сцену
-    if "next_scene" in choice:
+
+if "next_scene" in choice:
     data["scene"] = choice["next_scene"]
     data["step"] = 0
 
@@ -612,6 +613,7 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Иначе продолжаем обычную историю
     await play_scene(update)
     return
+
 
 
     # Иначе просто двигаемся дальше по сцене
