@@ -541,8 +541,14 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # =========== КНОПКА "ДАЛЬШЕ" ===========
     if query.data == "next":
-    data["step"] += 1
-    scene = SCENES[data["scene"]]
+        data["step"] += 1
+
+        await query.answer()
+        await query.edit_message_text(
+        text=f"Переходим к шагу {data['step']} ➡️",
+    )
+
+
 
     print("DEBUG → SCENE:", data["scene"])
     print("DEBUG → STEP:", data["step"])
