@@ -609,9 +609,14 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text("Ошибка выбора.")
         return
 
-    # Ответ персонажа
+        # Ответ персонажа
     if "response" in choice:
         await query.message.reply_text(choice["response"])
+
+    # ⬇️ Переход в другую сцену
+    if "next_scene" in choice:
+        data["scene"] = choice["next_scene"]
+        data["step"] = 0
 
         # Если это переход в свободный чат
         if data["scene"] == "FREE_CHAT":
@@ -625,14 +630,12 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "Он помнит об этом и дорожит тем вечером."
             )
 
-            
-          return  # ← этот return должен быть на том же уровне, что и await query.message...
+            return  # ← теперь правильный уровень отступов!
 
-
-    
         # Иначе продолжаем историю
         await play_scene(update)
         return
+
 
     # Иначе просто идём дальше
     await asyncio.sleep(0.8)
@@ -702,19 +705,18 @@ async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ])
 
     # долгосрочная память (например: он помнит о свидании)
-long_memory_text = user_long_memory.get(uid, "")
+    long_memory_text = user_long_memory.get(uid, "")
 
-messages = [
-    {"role": "system", "content": SYSTEM_PROMPT},
-    {"role": "system", "content": f"Краткая память общения: {chat_memory[uid]['summary']}"},
-    {"role": "system", "content": f"Долгосрочная память о событиях: {long_memory_text}"},
-    {"role": "system", "content": f"Перед ответом применяй стиль: {emotion_tone}"},
-] + chat_memory[uid]["dialogue"][-10:] + [{"role": "user", "content": user_text}]
-
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": f"Краткая память общения: {chat_memory[uid]['summary']}"},
+        {"role": "system", "content": f"Долгосрочная память о событиях: {long_memory_text}"},
+        {"role": "system", "content": f"Перед ответом применяй стиль: {emotion_tone}"},
+    ] + chat_memory[uid]["dialogue"][-10:] + [{"role": "user", "content": user_text}]
 
     try:
         completion = client.chat.completions.create(
-            model="gpt-4o-mini",  # твоя модель (нового поколения)
+            model="gpt-4o-mini",
             messages=messages,
             temperature=random.uniform(0.7, 0.95),
             max_tokens=300,
