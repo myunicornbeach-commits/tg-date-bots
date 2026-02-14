@@ -1,5 +1,7 @@
 import os
 import asyncio
+import openai  # <-- ДОБАВЬ ЭТУ СТРОКУ
+
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder,
@@ -15,6 +17,9 @@ from telegram.ext import (
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN не задан")
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
 
 # ================== USER MEMORY ==================
 
