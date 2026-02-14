@@ -498,17 +498,13 @@ if "image" in node:
         message = update.message
 
 if "choices" in node:
-    keyboard = [
-        [InlineKeyboardButton(v["label"], callback_data=k)]
-        for k, v in node["choices"].items()
-    ]
+    keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
 
-    await message.reply_text(
-        node["text"],
-        parse_mode="Markdown",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-    )
-    return
+await message.reply_text(
+    node["text"],
+    parse_mode="Markdown",
+    reply_markup=InlineKeyboardMarkup(keyboard),
+)
 
     # Если нет вариантов — делаем кнопку "Дальше"
     keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
