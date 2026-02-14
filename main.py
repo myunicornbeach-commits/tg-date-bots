@@ -541,7 +541,6 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # =========== КНОПКА "ДАЛЬШЕ" ===========
     if query.data == "next":
-    if query.data == "next":
     data["step"] += 1
     scene = SCENES[data["scene"]]
 
