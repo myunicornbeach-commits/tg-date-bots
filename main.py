@@ -19,10 +19,15 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN не задан")
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-client = openai.OpenAI()
-if not openai.api_key:
-    raise RuntimeError("OPENAI_API_KEY не задан")  # <-- новая проверка
+from openai import OpenAI
+
+# создаём клиента, он сам возьмёт ключ из переменных Railway
+client = OpenAI()
+
+# дополнительная проверка (если ключ не найден)
+if not os.getenv("OPENAI_API_KEY"):
+    raise RuntimeError("OPENAI_API_KEY не задан")
+
 
 # ================== USER MEMORY ==================
 
