@@ -1,6 +1,5 @@
 import os
 import asyncio
-import openai
 import random
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -13,21 +12,21 @@ from telegram.ext import (
     filters
 )
 
+# ✅ Импортируем новый клиент OpenAI
+from openai import OpenAI
+
 # ================== CONFIG ==================
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN не задан")
 
-from openai import OpenAI
-
-# создаём клиента, он сам возьмёт ключ из переменных Railway
+# ✅ Создаём OpenAI‑клиент — возьмёт ключ автоматически из Railway
 client = OpenAI()
 
-# дополнительная проверка (если ключ не найден)
+# ✅ Проверяем, что ключ действительно есть
 if not os.getenv("OPENAI_API_KEY"):
     raise RuntimeError("OPENAI_API_KEY не задан")
-
 
 # ================== USER MEMORY ==================
 
@@ -38,8 +37,9 @@ def init_user(uid: int):
     user_memory[uid] = {
         "scene": "INTRO",
         "step": 0,
-        "mode": "SCENE"
+        "mode": "SCENE"  # SCENE | FREE_CHAT
     }
+
 
 
 
