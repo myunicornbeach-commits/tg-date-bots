@@ -285,7 +285,7 @@ SCENES = {
 
     {
         # бокалы с вином и десерт
-        "image": "https://i.ibb.co/Gv6S0xLS/Picsart-26-02-14-00-14-16-604.png",
+        "image": "https://i.ibb.co/YBJPtq5d/Picsart-26-02-14-12-41-03-444.jpg",
         "text": "_Официант приносит десерт и разливает вино по бокалам._"
     },
 
