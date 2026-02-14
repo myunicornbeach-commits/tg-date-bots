@@ -613,10 +613,6 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "response" in choice:
         await query.message.reply_text(choice["response"])
 
-    if "next_scene" in choice:
-        data["scene"] = choice["next_scene"]
-        data["step"] = 0
-
         # Если это переход в свободный чат
         if data["scene"] == "FREE_CHAT":
             data["mode"] = "FREE_CHAT"
@@ -629,7 +625,9 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "Он помнит об этом и дорожит тем вечером."
             )
 
-            return
+            
+        return  # ← этот return должен быть на том же уровне, что и await query.message...
+
 
         # Иначе продолжаем историю
         await play_scene(update)
