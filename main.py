@@ -471,6 +471,8 @@ async def send_node(update: Update, node: dict):
 
     await message.reply_text(node["text"], parse_mode="Markdown")
 
+
+=InlineKeyboardMarkup(keyboard),
 async def play_scene(update: Update):
     uid = update.effective_user.id
     data = user_memory[uid]
@@ -485,21 +487,21 @@ async def play_scene(update: Update):
 
     node = scene[step]
 
-    # === если есть картинка в узле ===
+    # === если есть картинка
     if "image" in node:
         if update.callback_query:
             await update.callback_query.message.reply_photo(node["image"])
         else:
             await update.message.reply_photo(node["image"])
 
-    # === выбираем сообщение (в зависимости от того, callback или нет)
+    # === выбираем, из какого источника отправляем сообщение
     if update.callback_query:
         message = update.callback_query.message
     else:
         message = update.message
 
-    # === если есть варианты выбора
-    if "choices" in node:
+    # === если есть варианты выбора — показать их
+    if "choices" in node and node["choices"]:
         keyboard = [
             [InlineKeyboardButton(opt["label"], callback_data=key)]
             for key, opt in node["choices"].items()
@@ -509,23 +511,15 @@ async def play_scene(update: Update):
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
+
     else:
-        # если нет вариантов — показываем кнопку "Дальше"
+        # если выбора нет — показать кнопку "Дальше"
         keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
         await message.reply_text(
             node["text"],
             parse_mode="Markdown",
             reply_markup=InlineKeyboardMarkup(keyboard),
         )
-
-
-
-    # Если нет вариантов — делаем кнопку "Дальше"
-    keyboard = [[InlineKeyboardButton("Дальше", callback_data="next")]]
-    await message.reply_text(
-        "Дальше",
-        reply_markup=InlineKeyboardMarkup(keyboard),
-    )
 
 
 # ================== HANDLERS ==================
