@@ -622,12 +622,7 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-import openai
-import openai
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-# 🧠 Сохраняем историю для каждого пользователя
-chat_memory = {}
+import random
 
 async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -640,32 +635,76 @@ async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not user_text:
         return
 
-    # если у пользователя нет памяти — создаём
+    # === создаём память, если её нет ===
     if uid not in chat_memory:
-        chat_memory[uid] = [{"role": "system", "content": SYSTEM_PROMPT}]
+        chat_memory[uid] = {
+            "summary": "Ещё нет данных.",
+            "dialogue": [{"role": "system", "content": SYSTEM_PROMPT}]
+        }
 
-    # добавляем сообщение пользователя в память
-    chat_memory[uid].append({"role": "user", "content": user_text})
+    # добавляем фразу пользователя
+    chat_memory[uid]["dialogue"].append({"role": "user", "content": user_text})
+
+    # === обновляем краткое описание диалога (каждые 5 сообщений) ===
+    if len(chat_memory[uid]["dialogue"]) % 5 == 0:
+        summarization_prompt = f"""
+Ты играешь роль персонажа Чонгука. 
+Суммируй последние фразы в 2-3 предложениях: 
+что происходит, что ты чувствуешь, как она себя ведёт.
+"""
+        try:
+            summary_completion = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": summarization_prompt},
+                    {"role": "user", "content": "\n".join(
+                        [m["content"] for m in chat_memory[uid]["dialogue"][-10:]]
+                    )}
+                ],
+                temperature=0.6,
+                max_tokens=100,
+            )
+            chat_memory[uid]["summary"] = summary_completion.choices[0].message["content"]
+        except Exception as e:
+            print(f"Ошибка суммаризации: {e}")
+
+    # === случайное настроение Чонгука ===
+    emotion_tone = random.choice([
+        "говори спокойным тоном, чуть задумчиво.",
+        "будь мягче, чувствительный момент.",
+        "добавь лёгкую иронию в интонации.",
+        "ответь искренне, с теплом и вниманием.",
+        "говори, будто немного волнуешься.",
+    ])
+
+    # === формируем запрос к модели ===
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": f"Краткая память общения: {chat_memory[uid]['summary']}"},
+        {"role": "system", "content": f"Перед ответом применяй стиль: {emotion_tone}"},
+    ] + chat_memory[uid]["dialogue"][-10:] + [{"role": "user", "content": user_text}]
 
     try:
-        # Отправляем всё прошлое общение + новую фразу
         completion = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=chat_memory[uid],
-            temperature=0.85,
+            # !!! ВОТ ЗДЕСЬ МЕНЯЕШЬ МОДЕЛЬ !!!
+            model="gpt-4o-mini",  # <-- Сюда вставь нужную модель
+            messages=messages,
+            temperature=random.uniform(0.7, 0.95),
             max_tokens=300,
         )
 
         reply = completion.choices[0].message["content"].strip()
 
-        # Добавляем ответ Чонгука в память
-        chat_memory[uid].append({"role": "assistant", "content": reply})
+        # сохраняем ответ Чонгука
+        chat_memory[uid]["dialogue"].append({"role": "assistant", "content": reply})
 
+        # выводим ответ
         await update.message.reply_text(reply)
 
     except Exception as e:
         print(f"⚠️ Ошибка OpenAI API: {e}")
         await update.message.reply_text("Извини, связь с сервером временно потеряна.")
+
 
 
 
