@@ -622,6 +622,8 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
+import openai
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
@@ -630,7 +632,32 @@ async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if user_memory[uid]["mode"] != "FREE_CHAT":
         return
 
-    await update.message.reply_text("Я слушаю тебя.")
+    # текст, который ты написала Чонгуку
+    user_text = update.message.text.strip()
+    if not user_text:
+        return
+
+    # формируем “характер” и вопрос для ИИ
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_text}
+    ]
+
+    try:
+        completion = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo", # можно 4-turbo, если доступно
+            messages=messages,
+            temperature=0.9, # определяет “эмоциональность” ответов
+            max_tokens=250,  # ограничение на длину ответа
+        )
+
+        reply = completion.choices[0].message["content"].strip()
+        await update.message.reply_text(reply)
+
+    except Exception as e:
+        print(f"⚠️ Ошибка OpenAI API: {e}")
+        await update.message.reply_text("Извини, связь с сервером временно потеряна.")
+
 
 
 # ================== RUN ==================
