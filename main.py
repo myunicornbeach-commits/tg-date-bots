@@ -32,6 +32,8 @@ if not os.getenv("OPENAI_API_KEY"):
 
 user_memory = {}
 chat_memory = {}
+user_long_memory = {}
+
 
 def init_user(uid: int):
     user_memory[uid] = {
@@ -611,7 +613,6 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "response" in choice:
         await query.message.reply_text(choice["response"])
 
-    # ⬇️ Этот блок должен быть внутри функции! (с правильными отступами)
     if "next_scene" in choice:
         data["scene"] = choice["next_scene"]
         data["step"] = 0
@@ -620,6 +621,29 @@ async def handle_choice(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data["scene"] == "FREE_CHAT":
             data["mode"] = "FREE_CHAT"
             await query.message.reply_text("Теперь мы можем просто поговорить 💬")
+
+            # 💾 Запоминаем, что это было свидание
+            uid = query.from_user.id
+            user_long_memory[uid] = (
+                "Ты и Чонгук уже провели вечер вместе на свидании. "
+                "Он помнит об этом и дорожит тем вечером."
+            )
+
+            return
+
+        # Иначе продолжаем историю
+        await play_scene(update)
+        return
+
+
+            return
+
+        # Иначе продолжаем историю
+        await play_scene(update)
+        return
+
+
+          
             return
 
         # Иначе продолжаем историю
@@ -693,12 +717,16 @@ async def free_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "говори, будто немного волнуешься.",
     ])
 
-    # === формируем запрос к модели ===
-    messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "system", "content": f"Краткая память общения: {chat_memory[uid]['summary']}"},
-        {"role": "system", "content": f"Перед ответом применяй стиль: {emotion_tone}"},
-    ] + chat_memory[uid]["dialogue"][-10:] + [{"role": "user", "content": user_text}]
+    # долгосрочная память (например: он помнит о свидании)
+long_memory_text = user_long_memory.get(uid, "")
+
+messages = [
+    {"role": "system", "content": SYSTEM_PROMPT},
+    {"role": "system", "content": f"Краткая память общения: {chat_memory[uid]['summary']}"},
+    {"role": "system", "content": f"Долгосрочная память о событиях: {long_memory_text}"},
+    {"role": "system", "content": f"Перед ответом применяй стиль: {emotion_tone}"},
+] + chat_memory[uid]["dialogue"][-10:] + [{"role": "user", "content": user_text}]
+
 
     try:
         completion = client.chat.completions.create(
