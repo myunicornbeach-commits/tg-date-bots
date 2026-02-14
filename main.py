@@ -1,6 +1,7 @@
 import os
 import asyncio
-import openai  # <-- ДОБАВЬ ЭТУ СТРОКУ
+import openai
+import random
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -19,19 +20,21 @@ if not BOT_TOKEN:
     raise RuntimeError("BOT_TOKEN не задан")
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
+if not openai.api_key:
+    raise RuntimeError("OPENAI_API_KEY не задан")  # <-- новая проверка
 
 # ================== USER MEMORY ==================
 
 user_memory = {}
-chat_memory = {}  # <-- ДОБАВЬ ЭТУ СТРОКУ СЮДА
+chat_memory = {}
 
 def init_user(uid: int):
     user_memory[uid] = {
         "scene": "INTRO",
         "step": 0,
-        "mode": "SCENE"  # SCENE | FREE_CHAT
+        "mode": "SCENE"
     }
+
 
 
 # ================== CHARACTER PROMPT ==================
